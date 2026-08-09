@@ -112,3 +112,4 @@ or browser-history collection.
 Collected: timestamp, anonymous per-resume session ID, device category, browser, OS, referrer
 domain, UTM parameters, page number, dwell time, opened, downloaded. That is the complete list, and
 `/privacy` renders it from the same source as the landing page so the two cannot drift.
+# Milo
