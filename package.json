@@ -1,0 +1,25 @@
+{
+  "name": "milo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Milo — privacy-conscious resume analytics. Monorepo root.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @milo/landing",
+    "build": "npm run build --workspace @milo/landing",
+    "start": "npm run start --workspace @milo/landing",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.6.14"
+  }
+}
