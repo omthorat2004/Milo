@@ -13,7 +13,9 @@ export async function deriveClientKey(headers: Headers): Promise<string> {
   const address = forwarded?.split(",")[0]?.trim() || headers.get("x-real-ip") || "unknown";
 
   const daySalt = new Date().toISOString().slice(0, 10);
-  const secret = process.env.WAITLIST_WEBHOOK_SECRET ?? "milo-local-salt";
+  // A dedicated salt, not reused from another secret. The fallback is fine:
+  // the hash only has to be non-reversible within a single day's window.
+  const secret = process.env.IP_HASH_SALT ?? "milo-local-salt";
 
   const digest = await crypto.subtle.digest(
     "SHA-256",

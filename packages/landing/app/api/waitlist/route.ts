@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { deriveClientKey } from "@/lib/security/client-key";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { diagnoseMongoError } from "@/lib/waitlist/mongo";
 import { waitlistRequestSchema } from "@/lib/waitlist/schema";
 import { getWaitlistStore } from "@/lib/waitlist/store";
 
@@ -60,7 +61,8 @@ export async function POST(request: Request): Promise<NextResponse> {
           : "You're already on the list.",
     });
   } catch (error) {
-    console.error("[milo.waitlist] signup failed", error);
+    const diagnosis = diagnoseMongoError(error);
+    console.error(`[milo.waitlist] signup failed${diagnosis ? ` — ${diagnosis}` : ""}`, error);
     return jsonError(503, "We couldn't save that right now. Please try again in a moment.");
   }
 }

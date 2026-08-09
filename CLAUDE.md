@@ -23,10 +23,11 @@ scaffolded yet**. Do not create empty package folders ahead of real code.
 - **Landing**: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Three.js via
   react-three-fiber · Zod
 - **Backend (later)**: **FastAPI + MongoDB**. Not Express, and not Next API routes for product
-  logic. The landing package's only route handler is the waitlist endpoint, written behind a
-  storage adapter so it can forward to FastAPI once that exists.
-- **No database in the landing package.** Waitlist signups go to a local JSON file in development
-  and to structured logs in production until the backend is ready.
+  logic. The landing package's only route handler is the waitlist endpoint.
+- **Waitlist storage is MongoDB**, via the adapter in `lib/waitlist/store.ts`. The same cluster the
+  FastAPI backend will use, so there is nothing to migrate later. The JSON-file and log adapters
+  exist only as development convenience and misconfiguration alarms respectively — do not add new
+  storage backends without a reason.
 
 ## Non-negotiable product rules
 
@@ -40,6 +41,16 @@ Allowed signals only: timestamp, anonymous session id, device category, browser,
 domain, UTM params, page number, dwell time, document opened, document downloaded.
 
 Marketing copy must never claim Milo can identify a viewer.
+
+## Licensing
+
+Milo is source available under the **Elastic License 2.0**, not MIT and not open source in the OSI
+sense. Do not change the license, add an MIT/Apache header to any file, or describe the project as
+"open source" without the "source available" qualifier. Third parties may self host but may not run
+Milo as a service for others.
+
+Any dependency added must be compatible with redistribution under these terms. Prefer MIT, Apache
+2.0, BSD and ISC dependencies. Do not add GPL or AGPL dependencies without raising it first.
 
 ## Conventions
 

@@ -112,52 +112,15 @@ class LogWaitlistStore implements WaitlistStore {
   }
 }
 
-/**
- * Forwards signups as JSON to an HTTP endpoint. This is the seam for the
- * FastAPI backend: set WAITLIST_FORWARD_URL to its waitlist route and nothing
- * else in this package changes.
- */
-class ForwardingWaitlistStore implements WaitlistStore {
-  readonly name = "forward";
-
-  constructor(
-    private readonly url: string,
-    private readonly secret: string | undefined,
-    private readonly fallback: WaitlistStore,
-  ) {}
-
-  async add(entry: WaitlistEntry): Promise<WaitlistResult> {
-    const response = await fetch(this.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(this.secret ? { "X-Milo-Signature": this.secret } : {}),
-      },
-      body: JSON.stringify(entry),
-      signal: AbortSignal.timeout(5_000),
-      cache: "no-store",
-    });
-
-    if (response.status === 409) return "already_subscribed";
-    if (!response.ok) throw new Error(`Waitlist forward responded ${response.status}`);
-    return "subscribed";
-  }
-
-  async count(): Promise<number> {
-    return this.fallback.count();
-  }
-}
-
 let cached: WaitlistStore | null = null;
 
 /**
  * Picks a store, most durable first:
  *
- *   1. MONGODB_URI          → MongoDB (production)
- *   2. WAITLIST_FORWARD_URL → forward to another service, e.g. FastAPI
- *   3. development          → a local JSON file
- *   4. production, none set → structured logs, so signups are at least
- *                             recoverable rather than silently dropped
+ *   1. MONGODB_URI  → MongoDB. The real store, in every environment that has it.
+ *   2. development  → a local JSON file, so you can work without a cluster.
+ *   3. production, no URI → structured logs, so a misconfigured deploy drops
+ *      signups loudly into the log rather than silently on the floor.
  */
 export function getWaitlistStore(): WaitlistStore {
   if (cached) return cached;
@@ -168,23 +131,16 @@ export function getWaitlistStore(): WaitlistStore {
     return cached;
   }
 
-  const local: WaitlistStore =
-    process.env.NODE_ENV === "production"
-      ? new LogWaitlistStore()
-      : new FileWaitlistStore(
-          process.env.WAITLIST_DATA_FILE ?? path.join(process.cwd(), ".data", "waitlist.json"),
-        );
-
-  const forwardUrl = process.env.WAITLIST_FORWARD_URL;
-  cached = forwardUrl
-    ? new ForwardingWaitlistStore(forwardUrl, process.env.WAITLIST_FORWARD_SECRET, local)
-    : local;
-
   if (process.env.NODE_ENV === "production") {
-    console.warn(
-      "[milo.waitlist] No MONGODB_URI set — signups are only recoverable from runtime logs.",
+    console.error(
+      "[milo.waitlist] MONGODB_URI is not set. Signups are only recoverable from runtime logs.",
     );
+    cached = new LogWaitlistStore();
+    return cached;
   }
 
+  cached = new FileWaitlistStore(
+    process.env.WAITLIST_DATA_FILE ?? path.join(process.cwd(), ".data", "waitlist.json"),
+  );
   return cached;
 }

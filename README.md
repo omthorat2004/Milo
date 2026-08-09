@@ -10,8 +10,9 @@ held attention. It never tells you _who_ read it, because it never collects that
 
 ## Status
 
-**Only the landing page is built.** It is production-ready and deployable today. The product app
-and backend are not started — no placeholder packages are committed for them.
+**Only the landing page is built.** It is production-ready and deployable today, with waitlist
+signups persisted to MongoDB. The product app and backend are not started — no placeholder packages
+are committed for them.
 
 ## Repository layout
 
@@ -65,12 +66,17 @@ adapter in `lib/waitlist/store.ts`, chosen at runtime:
 
 | Condition | Adapter | Behaviour |
 | --- | --- | --- |
-| `WAITLIST_FORWARD_URL` set | `forward` | POSTs `{ email, source, createdAt }` to that URL |
-| development, otherwise | `file` | Appends to `.data/waitlist.json` (gitignored) |
-| production, otherwise | `log` | One structured line per signup, retained in host logs |
+| `MONGODB_URI` set | `mongodb` | Inserts into the `waitlist` collection |
+| development, no URI | `file` | Appends to `.data/waitlist.json` (gitignored) |
+| production, no URI | `log` | Logs an error and writes one line per signup — a misconfiguration, not a supported mode |
 
-There is no database yet by design. When `packages/api` exists, point `WAITLIST_FORWARD_URL` at its
-waitlist endpoint — the frontend does not change.
+MongoDB is the store, and it is the same database the FastAPI backend will use, so nothing has to
+be migrated when `packages/api` lands. Duplicate signups are prevented by a unique index on
+`email`, created on first use — a database-level guarantee rather than a read-then-write check that
+would race between concurrent requests.
+
+Emails are lowercased and trimmed by the Zod schema before they reach the store, so
+`Foo@Example.com` and `foo@example.com` are one person.
 
 `GET /api/waitlist` returns the signup count and requires `WAITLIST_ADMIN_TOKEN` as a bearer token.
 It 404s otherwise. The count is deliberately not shown on the page: early numbers are weak social
@@ -84,15 +90,20 @@ Emails are never returned over HTTP by any endpoint.
 2. Set **Root Directory** to `packages/landing`.
 3. Framework preset: Next.js. Build and install commands are detected.
 4. Environment variables (Production):
-   - `NEXT_PUBLIC_SITE_URL` — the real origin, e.g. `https://milo.app`. Used for canonical URLs,
-     `sitemap.xml`, and Open Graph tags.
+   - `MONGODB_URI` — the Atlas connection string. **Required**, or signups are not persisted.
+   - `MONGODB_DB` — defaults to `milo`.
+   - `NEXT_PUBLIC_SITE_URL` — the deployment origin, e.g. `https://milo-xxxx.vercel.app`. Drives
+     canonical URLs, `sitemap.xml`, and Open Graph tags, so a wrong value breaks link previews.
    - `WAITLIST_ADMIN_TOKEN` — any long random string, to read the signup count.
-   - `WAITLIST_FORWARD_URL` / `WAITLIST_FORWARD_SECRET` — optional, once a backend exists.
+   - `IP_HASH_SALT` — optional salt for the rate-limit hash.
 
-Signups land in the runtime logs until a backend is wired up. Grep them with:
+In MongoDB Atlas, under **Network Access**, allow `0.0.0.0/0`. Vercel functions do not have stable
+egress IPs on the Hobby plan, so an IP allowlist will silently reject connections.
+
+Check signups landed:
 
 ```bash
-vercel logs <deployment-url> | grep milo.waitlist
+curl https://<deployment-url>/api/waitlist -H "Authorization: Bearer $WAITLIST_ADMIN_TOKEN"
 ```
 
 ### Branding on the deployment
@@ -112,4 +123,27 @@ or browser-history collection.
 Collected: timestamp, anonymous per-resume session ID, device category, browser, OS, referrer
 domain, UTM parameters, page number, dwell time, opened, downloaded. That is the complete list, and
 `/privacy` renders it from the same source as the landing page so the two cannot drift.
-# Milo
+
+## License
+
+Milo is **source available** under the [Elastic License 2.0](LICENSE), not open source in the OSI
+sense. The code is public so that the privacy claims above can be audited by anyone: a product
+whose entire pitch is "we do not collect that" should be inspectable.
+
+In plain English, and the [LICENSE](LICENSE) file governs, not this summary:
+
+**You may** read the code, fork it, modify it, and run it yourself, including inside a company for
+internal use.
+
+**You may not** provide Milo to third parties as a hosted or managed service, where that service
+gives users a substantial set of Milo's features. In other words, deploying your own copy for
+yourself is fine. Launching it as a product for other people is not.
+
+**You may not** remove or obscure the copyright and license notices, and if you distribute a
+modified copy you must say prominently that you changed it.
+
+Contributions are welcome under these same terms. If you want a different arrangement, ask.
+
+Milo is built on third-party open source software whose licenses require their notices to be
+retained. Those are reproduced in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Milo's own
+license does not apply to those components.

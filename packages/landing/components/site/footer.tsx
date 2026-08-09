@@ -23,6 +23,16 @@ export function Footer() {
           <Link href="/#waitlist" className="transition-colors hover:text-sand-300">
             Waitlist
           </Link>
+          {/* Source available, not open source. The repo is public so the
+              privacy claims can be audited. */}
+          <a
+            href="https://github.com/omthorat/milo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-sand-300"
+          >
+            Source
+          </a>
           <span className="text-sand-700/60">© {new Date().getFullYear()} Milo</span>
         </nav>
       </Container>
