@@ -26,7 +26,7 @@ export function Footer() {
           {/* Source available, not open source. The repo is public so the
               privacy claims can be audited. */}
           <a
-            href="https://github.com/omthorat/milo"
+            href="https://github.com/omthorat2004/milo"
             target="_blank"
             rel="noopener noreferrer"
             className="transition-colors hover:text-sand-300"

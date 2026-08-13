@@ -12,12 +12,16 @@ import { cn } from "@/lib/utils";
  * Every entry must resolve to something that exists today. No placeholder
  * "Contact" or "About" links — a dead nav item costs more trust than a missing
  * one. A real /features page can replace the anchor when it is built.
+ *
+ * This list must stay in the same order as the sections render in
+ * `app/page.tsx`: story, how-it-works, analytics, features, privacy. A nav that
+ * disagrees with the page sends people backwards up the page when they click.
  */
 const navigation = [
   { href: "#story", label: "The story" },
   { href: "#how-it-works", label: "How it works" },
-  { href: "#features", label: "Features" },
   { href: "#analytics", label: "Dashboard" },
+  { href: "#features", label: "Features" },
   { href: "#privacy", label: "Privacy" },
 ] as const;
 
