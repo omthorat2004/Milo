@@ -11,7 +11,7 @@ type Props = { progress: React.RefObject<number> };
  *
  * Shown when the visitor asked for reduced motion or the device has no WebGL.
  * It still tracks the act, so the section reads as a sequence rather than a
- * frozen decoration — it just does it with opacity instead of animation.
+ * frozen decoration, it just does it with opacity instead of animation.
  */
 export function StoryStill({ progress }: Props) {
   const [act, setAct] = useState(0);

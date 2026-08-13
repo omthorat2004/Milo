@@ -1,0 +1,13 @@
+{
+  "name": "@milo/styles",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared Milo design tokens and base styles. Consumed by every Milo web app.",
+  "license": "SEE LICENSE IN LICENSE",
+  "exports": {
+    "./globals.css": "./globals.css"
+  },
+  "files": [
+    "globals.css"
+  ]
+}

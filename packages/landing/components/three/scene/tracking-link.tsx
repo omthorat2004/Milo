@@ -13,7 +13,7 @@ type Props = { progress: React.RefObject<number> };
 /**
  * Act 3: the Milo link closing around the resume.
  *
- * A single ring, drawn in signal green — the first green in the whole story, so
+ * A single ring, drawn in signal green, the first green in the whole story, so
  * it reads as the moment tracking begins.
  */
 export function TrackingLink({ progress }: Props) {

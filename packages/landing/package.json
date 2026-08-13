@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@milo/styles": "*",
+    "@milo/ui": "*",
     "@react-three/fiber": "^9.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.545.0",

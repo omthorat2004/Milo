@@ -13,7 +13,7 @@ const windows = new Map<string, Window>();
  * Fixed-window, in-process limiter.
  *
  * Per-instance and therefore best-effort: a serverless deployment can run
- * several instances, each with its own map. That is fine here — it exists to
+ * several instances, each with its own map. That is fine here, it exists to
  * blunt casual form spam on a marketing page and is paired with a honeypot
  * field in the route handler. A shared store can replace this later without
  * changing callers.

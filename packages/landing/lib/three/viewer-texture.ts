@@ -42,7 +42,7 @@ export function createViewerBarTexture(): THREE.CanvasTexture {
   ctx.font = `600 34px ${SANF}`;
   ctx.fillText("Milo", 44, midline);
 
-  // Signal dot — green means an event was recorded.
+  // Signal dot, green means an event was recorded.
   ctx.beginPath();
   ctx.arc(126, midline, 6, 0, Math.PI * 2);
   ctx.fillStyle = SIGNAL;

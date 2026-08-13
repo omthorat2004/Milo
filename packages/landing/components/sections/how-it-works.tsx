@@ -6,7 +6,7 @@ const steps = [
   {
     icon: Link2,
     title: "Paste the URL your resume already has",
-    body: "Your site, GitHub, Drive, Dropbox — anywhere public. Milo stores the link and some metadata. It never uploads or keeps a copy of your PDF.",
+    body: "Your site, GitHub, Drive, Dropbox, anywhere public. Milo stores the link and some metadata. It never uploads or keeps a copy of your PDF.",
     code: "https://yoursite.com/resume.pdf",
   },
   {
@@ -54,6 +54,23 @@ export function HowItWorks() {
             </li>
           ))}
         </ol>
+        {/*
+          State the boundary before a visitor discovers it themselves. Milo can
+          only see a page it serves, so an attached or uploaded PDF reports
+          nothing back.
+        */}
+        <div className="mt-8 rounded-card border border-sand-300/12 bg-ink-850/50 p-6">
+          <h3 className="font-display text-lg text-sand-50">
+            Milo works on the link, not the file
+          </h3>
+          <p className="mt-2.5 text-sm leading-relaxed text-sand-500">
+            Share the Milo link and every open, page turn and download is measurable. Attach the raw
+            PDF to an email or upload it to a job portal and Milo sees nothing: a file that leaves
+            your hands stops reporting back. Embedding a tracker inside the PDF would change that,
+            and it is exactly the invisible tracking Milo refuses to do. So use the link in LinkedIn
+            messages, cold emails, referrals, your portfolio and your signature.
+          </p>
+        </div>
       </Container>
     </Section>
   );

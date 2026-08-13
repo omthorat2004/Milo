@@ -23,7 +23,7 @@ type Props = { progress: React.RefObject<number> };
 /**
  * Act 2: the same resume sent forty times, drifting off into the dark.
  *
- * One InstancedMesh — eighteen separate meshes would mean eighteen draw calls
+ * One InstancedMesh, eighteen separate meshes would mean eighteen draw calls
  * for what is visually a single gesture.
  */
 export function ScatteredCopies({ progress }: Props) {
@@ -59,7 +59,7 @@ export function ScatteredCopies({ progress }: Props) {
     const shared = actProgress(progress.current, "shared");
     const link = actProgress(progress.current, "link");
 
-    // Visible only while the resume is lost — the link act calls them home.
+    // Visible only while the resume is lost, the link act calls them home.
     surface.opacity = Math.min(smoothstep(shared * 1.6), 1) * (1 - smoothstep(link * 1.4)) * 0.5;
     node.visible = surface.opacity > 0.01;
     if (!node.visible) return;

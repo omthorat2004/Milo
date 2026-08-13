@@ -62,7 +62,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
   } catch (error) {
     const diagnosis = diagnoseMongoError(error);
-    console.error(`[milo.waitlist] signup failed${diagnosis ? ` — ${diagnosis}` : ""}`, error);
+    console.error(`[milo.waitlist] signup failed${diagnosis ? `, ${diagnosis}` : ""}`, error);
     return jsonError(503, "We couldn't save that right now. Please try again in a moment.");
   }
 }

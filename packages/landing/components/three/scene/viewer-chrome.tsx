@@ -33,7 +33,7 @@ type Props = {
 /**
  * Act 3 onward: the resume is now open inside Milo.
  *
- * A viewer shell assembles around the page — top bar with the tracking URL and
+ * A viewer shell assembles around the page, top bar with the tracking URL and
  * a Download button, and a panel behind the document. The button flashes each
  * time the download beat fires, so cause and effect are visible.
  */
@@ -85,12 +85,12 @@ export function ViewerChrome({ progress, downloadFlashRef }: Props) {
   return (
     /*
      * Pushed back in z so it stays behind the page for the whole entry
-     * transition — the page is still travelling forward from the "lost" act
+     * transition, the page is still travelling forward from the "lost" act
      * while the chrome assembles, and a semi-transparent panel in front of it
      * would tint the document.
      */
     <group ref={group} position-z={DEPTH} visible={false}>
-      {/* Panel behind the page — gives the document a viewer to sit in. */}
+      {/* Panel behind the page, gives the document a viewer to sit in. */}
       <mesh position={[0, PANEL_OFFSET_Y, -0.06]}>
         <planeGeometry args={[BAR_WIDTH, PANEL_HEIGHT]} />
         <meshBasicMaterial

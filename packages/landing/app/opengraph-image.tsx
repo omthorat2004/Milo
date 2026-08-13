@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 import { siteConfig } from "@/lib/site";
 
-export const alt = `${siteConfig.name} — ${siteConfig.tagline}`;
+export const alt = `${siteConfig.name}, ${siteConfig.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -62,7 +62,7 @@ export default function OpengraphImage() {
         </span>
         <span style={{ color: "#9C8A73", fontSize: 30, marginTop: 28, maxWidth: 820 }}>
           Views, downloads and per-page attention for the resume you already host. Anonymous
-          analytics — never who.
+          analytics, never who.
         </span>
       </div>
 

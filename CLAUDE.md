@@ -2,7 +2,7 @@
 
 Privacy-conscious **resume analytics**. A candidate hosts their resume PDF wherever it already
 lives, gives Milo the public URL, and shares a Milo tracking link instead. Milo answers
-_"how is my resume performing?"_ — never _"who is looking at it?"_
+_"how is my resume performing?"_, never _"who is looking at it?"_
 
 ## Repository layout
 
@@ -31,7 +31,7 @@ must stay at the root, since npm workspaces requires it. All Python configuratio
   logic. The landing package's only route handler is the waitlist endpoint.
 - **Waitlist storage is MongoDB**, via the adapter in `lib/waitlist/store.ts`. The same cluster the
   FastAPI backend will use, so there is nothing to migrate later. The JSON-file and log adapters
-  exist only as development convenience and misconfiguration alarms respectively — do not add new
+  exist only as development convenience and misconfiguration alarms respectively, do not add new
   storage backends without a reason.
 
 ## Non-negotiable product rules

@@ -20,12 +20,12 @@ next-env.d.ts
 # testing
 coverage/
 
-# environment — never commit real secrets
+# environment, never commit real secrets
 .env
 .env.*
 !.env.example
 
-# local waitlist signups — contains real email addresses
+# local waitlist signups, contains real email addresses
 .data/
 
 # python (packages/api, added later)

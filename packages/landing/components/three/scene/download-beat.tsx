@@ -25,7 +25,7 @@ type Props = {
 /**
  * The download event, on a loop.
  *
- * A ghost of the page detaches, falls, and lands on a tray — the visual for
+ * A ghost of the page detaches, falls, and lands on a tray, the visual for
  * "the DOWNLOAD event is recorded before the file is handed over". The arrow
  * and tray are the only other green objects in the scene, matching the pulses.
  */
@@ -52,7 +52,7 @@ export function DownloadBeat({ progress, downloadFlashRef }: Props) {
     const signal = smoothstep(actProgress(p, "signal"));
     const insight = smoothstep(actProgress(p, "insight"));
 
-    // Belongs to the signal act only — act 5 hands the frame to the analytics.
+    // Belongs to the signal act only, act 5 hands the frame to the analytics.
     const presence = signal * (1 - insight);
     node.visible = presence > 0.02;
 

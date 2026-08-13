@@ -3,13 +3,14 @@ import { DashboardPreview } from "@/components/sections/dashboard-preview";
 import { Features } from "@/components/sections/features";
 import { Hero } from "@/components/sections/hero";
 import { HowItWorks } from "@/components/sections/how-it-works";
+import { ShippingPath } from "@/components/sections/shipping-path";
 import { PrivacyPromise } from "@/components/sections/privacy-promise";
 import { Story } from "@/components/sections/story";
 import { featureFlags } from "@/lib/site";
 import { getWaitlistStore } from "@/lib/waitlist/store";
 
 export default async function HomePage() {
-  // Read directly from the store rather than over HTTP — this is a server
+  // Read directly from the store rather than over HTTP, this is a server
   // component, and the count endpoint is intentionally operator-only.
   const waitlistCount = featureFlags.showWaitlistCount
     ? await getWaitlistStore()
@@ -25,6 +26,7 @@ export default async function HomePage() {
       <DashboardPreview />
       <Features />
       <PrivacyPromise />
+      <ShippingPath />
       <ClosingCta waitlistCount={waitlistCount} />
     </>
   );

@@ -8,7 +8,7 @@ import type { WaitlistEntry } from "./types";
  * MongoDB connection, shared across invocations.
  *
  * Serverless functions are frozen and thawed rather than torn down, so the
- * client is cached on `globalThis` — a new MongoClient per request would
+ * client is cached on `globalThis`, a new MongoClient per request would
  * exhaust the connection pool under any real traffic. In development the same
  * cache survives hot reloads.
  */
@@ -35,7 +35,7 @@ function getClient(uri: string): Promise<MongoClient> {
       /*
        * Drop the cache on failure. Without this, a rejected connect promise
        * stays memoised on a warm serverless instance and every later request
-       * re-awaits the same rejection — so fixing the cluster or its credentials
+       * re-awaits the same rejection, so fixing the cluster or its credentials
        * appears to change nothing until the instance is recycled.
        */
       globalThis.__miloMongoClient = undefined;
@@ -52,7 +52,7 @@ export type WaitlistDocument = WaitlistEntry;
  * Turns a driver error into the specific thing to go and fix.
  *
  * The driver's own messages bury the cause in a replica-set topology dump, and
- * the three realistic production failures need three different fixes — so the
+ * the three realistic production failures need three different fixes, so the
  * log line should name which one it is.
  */
 export function diagnoseMongoError(error: unknown): string | null {

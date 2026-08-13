@@ -12,7 +12,7 @@ export type { WaitlistEntry, WaitlistResult, WaitlistStore };
 const DUPLICATE_KEY = 11000;
 
 /**
- * MongoDB — the production store, and the same database the FastAPI backend
+ * MongoDB, the production store, and the same database the FastAPI backend
  * will use, so nothing has to be migrated when it lands.
  *
  * Duplicates are rejected by a unique index rather than a read-then-write

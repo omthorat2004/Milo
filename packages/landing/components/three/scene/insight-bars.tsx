@@ -9,7 +9,7 @@ import { damp } from "@/lib/utils";
 
 import { palette } from "./palette";
 
-/** Shape only — an abstract silhouette of engagement, not a data claim. */
+/** Shape only: an abstract silhouette of engagement, not a data claim. */
 const BAR_HEIGHTS = [0.55, 1.0, 0.78, 1.35, 0.62, 0.92, 0.44] as const;
 const BAR_WIDTH = 0.2;
 const BAR_GAP = 0.34;
@@ -20,7 +20,7 @@ type Props = { progress: React.RefObject<number> };
  * Act 5: the pattern the candidate actually gets to see.
  *
  * Bars grow from the floor as the resume steps aside. Heights are decorative
- * and fixed in code — never presented as real analytics.
+ * and fixed in code, never presented as real analytics.
  */
 export function InsightBars({ progress }: Props) {
   const group = useRef<THREE.Group>(null);

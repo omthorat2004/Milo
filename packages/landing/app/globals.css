@@ -1,124 +1,14 @@
-@import "tailwindcss";
+/*
+ * Entry stylesheet for the landing site.
+ *
+ * Tokens and base styles live in packages/styles/globals.css so every Milo app
+ * shares one palette. Only the source globs are app-specific: Tailwind's
+ * automatic content detection resolves relative to the imported file, which
+ * would point into node_modules rather than at this app.
+ */
+@import "@milo/styles/globals.css";
 
-/* ---------------------------------------------------------------------------
-   Milo design tokens
-
-   One committed theme: deep warm ink, sand/clay neutrals for paper and copy,
-   a single signal green reserved for "tracked" moments. Green never appears
-   as decoration — if something is green, it represents a recorded signal.
---------------------------------------------------------------------------- */
-@theme {
-  --color-ink-950: #060807;
-  --color-ink-900: #0a0d0c;
-  --color-ink-850: #0f1312;
-  --color-ink-800: #141917;
-  --color-ink-700: #1c2320;
-  --color-ink-600: #2a332e;
-
-  --color-sand-50: #faf4ea;
-  --color-sand-100: #ede1d1;
-  --color-sand-200: #ddcbb4;
-  --color-sand-300: #c8a98b;
-  --color-sand-500: #9c8a73;
-  --color-sand-700: #6b5f50;
-
-  --color-clay-400: #c08d63;
-
-  --color-signal-200: #b6f5d5;
-  --color-signal-300: #7fe8b4;
-  --color-signal-400: #3fcf8e;
-  --color-signal-500: #22b073;
-  --color-signal-900: #0c2e22;
-
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display), ui-serif, Georgia, serif;
-
-  --radius-card: 1rem;
-
-  --animate-rise: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-  --animate-pulse-ring: pulse-ring 3s ease-out infinite;
-
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(14px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  @keyframes pulse-ring {
-    0% {
-      opacity: 0.5;
-      transform: scale(0.6);
-    }
-    70% {
-      opacity: 0;
-      transform: scale(1.6);
-    }
-    100% {
-      opacity: 0;
-      transform: scale(1.6);
-    }
-  }
-}
-
-@layer base {
-  html {
-    scroll-behavior: smooth;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  body {
-    background-color: var(--color-ink-950);
-    color: var(--color-sand-100);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    overflow-x: hidden;
-  }
-
-  ::selection {
-    background-color: var(--color-signal-400);
-    color: var(--color-ink-950);
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--color-signal-400);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-}
-
-@utility text-balance {
-  text-wrap: balance;
-}
-
-/* Warm grain overlay — keeps large flat ink areas from banding. */
-@utility grain {
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-}
+@source "../app";
+@source "../components";
+@source "../lib";
+@source "../../ui/src";

@@ -89,6 +89,13 @@ is required. They are listed for completeness:
 - `@img/sharp-*` (LGPL-3.0-or-later) — Next.js image optimization, invoked as a separate native
   library rather than statically linked
 
+## Illustrations
+
+`packages/frontend/public/illustrations/candidate.svg` is an unDraw illustration
+("Developer activity"), recoloured to the Milo palette. unDraw illustrations are free for
+commercial and non-commercial use with no attribution required; they may not be redistributed as a
+standalone illustration collection, which is not what happens here. Source: <https://undraw.co>.
+
 ## Originally authored components
 
 `components/ui/slot.tsx` is an original implementation of the common `asChild` prop-merging

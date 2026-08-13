@@ -16,7 +16,7 @@ type Props = { progress: React.RefObject<number> };
 /**
  * Act 4: one pulse per open.
  *
- * Rings expand and fade from the page — the visual grammar for "an event was
+ * Rings expand and fade from the page, the visual grammar for "an event was
  * recorded". Nothing here represents a person; the pulse is the whole record.
  */
 export function SignalPulses({ progress }: Props) {

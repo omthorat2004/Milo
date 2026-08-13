@@ -119,7 +119,7 @@ export default function PrivacyPage() {
           <Link href="/#waitlist" className="text-signal-400 hover:text-signal-300">
             Join the waitlist
           </Link>{" "}
-          and reply to the first email — it reaches a person.
+          and reply to the first email, it reaches a person.
         </p>
       </Container>
     </article>

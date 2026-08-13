@@ -4,7 +4,7 @@ import { Container } from "@/components/ui/section";
 type Props = {
   /**
    * Rendered only when `featureFlags.showWaitlistCount` is on. It stays off
-   * until the number is worth showing — early counts undersell the product.
+   * until the number is worth showing, early counts undersell the product.
    */
   waitlistCount: number | null;
 };
@@ -27,7 +27,7 @@ export function ClosingCta({ waitlistCount }: Props) {
 
         <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-sand-500">
           Milo is in private beta. Leave your email and we&rsquo;ll send one message when tracking
-          links open up — no drip sequence, no newsletter.
+          links open up, no drip sequence, no newsletter.
         </p>
 
         <div className="mx-auto mt-10 max-w-lg">

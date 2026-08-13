@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Where the signup came from — used only to tell "hero CTA" from "footer CTA"
+ * Where the signup came from, used only to tell "hero CTA" from "footer CTA"
  * so we can tune the page. Not a user identifier.
  */
 export const waitlistSourceSchema = z.enum(["hero", "closing", "story", "unknown"]);

@@ -47,7 +47,7 @@ function StoryViewport() {
           className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-ink-950 via-ink-950/85 to-transparent sm:hidden"
         />
 
-        {/* Copy rail — sits above the canvas, pinned to the bottom on mobile. */}
+        {/* Copy rail, sits above the canvas, pinned to the bottom on mobile. */}
         <Container className="relative flex h-full items-end pb-16 sm:items-center sm:pb-0">
           <div className="relative w-full sm:max-w-md">
             {storyActs.map((act, index) => (

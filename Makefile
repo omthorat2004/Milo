@@ -17,7 +17,7 @@ LANDING  := packages/landing
         build lint lint-js lint-py fmt fmt-js fmt-py fmt-check typecheck test test-py clean
 
 help: ## Show available targets
-	@echo "Milo — make <target>"; echo
+	@echo "Milo, make <target>"; echo
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  %-16s %s\n", $$1, $$2}'
 

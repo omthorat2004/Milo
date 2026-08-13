@@ -18,7 +18,7 @@ const SANS = "system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif
  * Fictional sample resume drawn to an offscreen canvas.
  *
  * The card has to read as a real CV at a glance in 3D, so headings and the name
- * are rendered as actual text while body copy stays as abstract rules — real
+ * are rendered as actual text while body copy stays as abstract rules, real
  * paragraphs would be illegible at this scale and impossible to localise.
  * Every detail is invented; example.com addresses only.
  */
@@ -42,32 +42,32 @@ export function createResumeTexture(pageNumber: number): THREE.CanvasTexture {
       {
         role: "Senior Software Engineer",
         org: "Northwind Systems",
-        period: "2022 — Present",
+        period: "2022 to Present",
         lines: 4,
       },
-      { role: "Software Engineer", org: "Cobalt Labs", period: "2019 — 2022", lines: 3 },
-      { role: "Backend Engineer", org: "Fernway", period: "2018 — 2019", lines: 2 },
+      { role: "Software Engineer", org: "Cobalt Labs", period: "2019 to 2022", lines: 3 },
+      { role: "Backend Engineer", org: "Fernway", period: "2018 to 2019", lines: 2 },
     ]);
     drawSkills(ctx, cursor);
     drawSection(ctx, cursor, "Education", [
       {
         role: "B.E. Computer Engineering",
         org: "University of Pune",
-        period: "2015 — 2019",
+        period: "2015 to 2019",
         lines: 1,
       },
     ]);
   } else {
     drawContinuedHeader(ctx, cursor);
     drawSection(ctx, cursor, "Selected Projects", [
-      { role: "Ledger — event pipeline", org: "Open source", period: "2024", lines: 2 },
-      { role: "Atlas — design system", org: "Northwind Systems", period: "2023", lines: 2 },
+      { role: "Ledger: event pipeline", org: "Open source", period: "2024", lines: 2 },
+      { role: "Atlas: design system", org: "Northwind Systems", period: "2023", lines: 2 },
     ]);
     drawSection(ctx, cursor, "Education", [
       {
         role: "B.E. Computer Engineering",
         org: "University of Pune",
-        period: "2015 — 2019",
+        period: "2015 to 2019",
         lines: 1,
       },
     ]);
@@ -131,7 +131,7 @@ function drawSection(
   ctx.font = `600 13px ${SANS}`;
   ctx.fillText(title.toUpperCase(), MARGIN, cursor.y);
 
-  // Section marker — the only accent on the page, echoing the signal green.
+  // Section marker, the only accent on the page, echoing the signal green.
   ctx.fillStyle = ACCENT;
   ctx.fillRect(MARGIN - 14, cursor.y + 1, 4, 12);
   cursor.y += 28;

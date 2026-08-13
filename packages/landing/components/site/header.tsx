@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Every entry must resolve to something that exists today. No placeholder
- * "Contact" or "About" links — a dead nav item costs more trust than a missing
+ * "Contact" or "About" links: a dead nav item costs more trust than a missing
  * one. A real /features page can replace the anchor when it is built.
  *
  * This list must stay in the same order as the sections render in
@@ -23,6 +23,7 @@ const navigation = [
   { href: "#analytics", label: "Dashboard" },
   { href: "#features", label: "Features" },
   { href: "#privacy", label: "Privacy" },
+  { href: "#path", label: "Path" },
 ] as const;
 
 export function Header() {

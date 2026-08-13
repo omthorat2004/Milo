@@ -44,7 +44,7 @@ export function DashboardPreview() {
         <SectionHeading
           eyebrow="The dashboard"
           title="Everything you get. Nothing you shouldn't."
-          description="Performance, sources, and per-page attention. No IP, no city, no company name, no identity — because Milo never collects them."
+          description="Performance, sources, and per-page attention. No IP, no city, no company name, no identity, because Milo never collects them."
         />
 
         <div className="mt-14 overflow-hidden rounded-card border border-sand-300/12 bg-ink-900/80">
@@ -119,7 +119,7 @@ export function DashboardPreview() {
                 ))}
               </ul>
               <p className="mt-6 border-t border-sand-300/10 pt-4 text-xs text-sand-700">
-                No name, no company, no location — by design.
+                No name, no company, no location. By design.
               </p>
             </Panel>
           </div>

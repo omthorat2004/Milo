@@ -3,7 +3,7 @@
 Privacy-conscious **resume analytics**.
 
 You host your resume PDF wherever it already lives. Milo gives you a tracking link to share
-instead, and tells you how that document performed — views, unique viewers, downloads, which pages
+instead, and tells you how that document performed: views, unique viewers, downloads, and which pages
 held attention. It never tells you _who_ read it, because it never collects that.
 
 > Your resume stays where it already lives. Milo provides the analytics layer.
@@ -91,18 +91,18 @@ npm run build:landing
 
 ## Waitlist
 
-`POST /api/waitlist` — Zod-validated, rate limited, honeypot-protected. Storage is behind an
+`POST /api/waitlist`, Zod-validated, rate limited, honeypot-protected. Storage is behind an
 adapter in `lib/waitlist/store.ts`, chosen at runtime:
 
 | Condition | Adapter | Behaviour |
 | --- | --- | --- |
 | `MONGODB_URI` set | `mongodb` | Inserts into the `waitlist` collection |
 | development, no URI | `file` | Appends to `.data/waitlist.json` (gitignored) |
-| production, no URI | `log` | Logs an error and writes one line per signup — a misconfiguration, not a supported mode |
+| production, no URI | `log` | Logs an error and writes one line per signup: a misconfiguration, not a supported mode |
 
 MongoDB is the store, and it is the same database the FastAPI backend will use, so nothing has to
 be migrated when `packages/api` lands. Duplicate signups are prevented by a unique index on
-`email`, created on first use — a database-level guarantee rather than a read-then-write check that
+`email`, created on first use: a database-level guarantee rather than a read-then-write check that
 would race between concurrent requests.
 
 Emails are lowercased and trimmed by the Zod schema before they reach the store, so
@@ -120,12 +120,12 @@ Emails are never returned over HTTP by any endpoint.
 2. Set **Root Directory** to `packages/landing`.
 3. Framework preset: Next.js. Build and install commands are detected.
 4. Environment variables (Production):
-   - `MONGODB_URI` — the Atlas connection string. **Required**, or signups are not persisted.
-   - `MONGODB_DB` — defaults to `milo`.
-   - `NEXT_PUBLIC_SITE_URL` — the deployment origin, e.g. `https://milo-xxxx.vercel.app`. Drives
+   - `MONGODB_URI`, the Atlas connection string. **Required**, or signups are not persisted.
+   - `MONGODB_DB`, defaults to `milo`.
+   - `NEXT_PUBLIC_SITE_URL`, the deployment origin, e.g. `https://milo-xxxx.vercel.app`. Drives
      canonical URLs, `sitemap.xml`, and Open Graph tags, so a wrong value breaks link previews.
-   - `WAITLIST_ADMIN_TOKEN` — any long random string, to read the signup count.
-   - `IP_HASH_SALT` — optional salt for the rate-limit hash.
+   - `WAITLIST_ADMIN_TOKEN`, any long random string, to read the signup count.
+   - `IP_HASH_SALT`, optional salt for the rate-limit hash.
 
 In MongoDB Atlas, under **Network Access**, allow `0.0.0.0/0`. Vercel functions do not have stable
 egress IPs on the Hobby plan, so an IP allowlist will silently reject connections.
@@ -139,7 +139,7 @@ curl https://<deployment-url>/api/waitlist -H "Authorization: Bearer $WAITLIST_A
 ### Branding on the deployment
 
 The tab icon comes from `app/icon.svg`, the home-screen icon from `app/apple-icon.tsx`, and the
-link preview card — the image LinkedIn renders when you post the URL — from
+link preview card, the image LinkedIn renders when you post the URL, from
 `app/opengraph-image.tsx`. All three are Milo's own mark; nothing falls back to a platform default.
 After deploying, re-scrape the URL with LinkedIn's Post Inspector so it picks up the card.
 

@@ -2,7 +2,7 @@
   "name": "milo",
   "version": "0.1.0",
   "private": true,
-  "description": "Milo — privacy-conscious resume analytics. Monorepo root.",
+  "description": "Milo, privacy-conscious resume analytics. Monorepo root.",
   "workspaces": [
     "packages/*"
   ],

@@ -7,7 +7,7 @@ type SlotProps = React.HTMLAttributes<HTMLElement> & { children?: React.ReactNod
 type ChildProps = { className?: string } & React.HTMLAttributes<HTMLElement>;
 
 /**
- * Minimal `asChild` implementation — merges props onto a single child element.
+ * Minimal `asChild` implementation, merges props onto a single child element.
  *
  * A four-line dependency-free stand-in for @radix-ui/react-slot, which is the
  * only piece of Radix this marketing page would otherwise need.

@@ -34,7 +34,7 @@ type Props = {
  *
  * Progress is written to a ref inside a rAF-throttled scroll handler, so the
  * 3D scene reads a fresh value every frame while React re-renders only when the
- * active act changes — roughly five times across the entire section.
+ * active act changes, roughly five times across the entire section.
  */
 export function StoryProgressProvider({ sectionRef, actCount, children }: Props) {
   const progress = useRef(0);

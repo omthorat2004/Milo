@@ -117,7 +117,7 @@ export function WaitlistForm({ source, className, size = "md" }: Props) {
           )}
         />
 
-        {/* Honeypot — hidden from people, irresistible to bots. */}
+        {/* Honeypot, hidden from people, irresistible to bots. */}
         <div aria-hidden="true" className="absolute h-0 w-0 overflow-hidden opacity-0">
           <label htmlFor={`${emailId}-company`}>Company</label>
           <input
