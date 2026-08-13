@@ -11,12 +11,16 @@
   },
   "scripts": {
     "dev": "npm run dev --workspace @milo/landing",
-    "build": "npm run build --workspace @milo/landing",
+    "build": "npm run build --workspaces --if-present",
     "start": "npm run start --workspace @milo/landing",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "dev:landing": "npm run dev --workspace @milo/landing",
+    "dev:frontend": "npm run dev --workspace @milo/frontend",
+    "build:landing": "npm run build --workspace @milo/landing",
+    "build:frontend": "npm run build --workspace @milo/frontend"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

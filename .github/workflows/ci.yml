@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  landing:
-    name: Landing (lint · typecheck · build)
+  javascript:
+    name: JavaScript (lint · typecheck · build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,3 +36,36 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  python:
+    name: Python (ruff · mypy · pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: packages/backend/.python-version
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Format check
+        run: poetry run ruff format --check .
+
+      - name: Lint
+        run: poetry run ruff check .
+
+      - name: Typecheck
+        run: poetry run mypy src
+
+      # pytest exits 5 when it collects nothing, which is the expected state
+      # until the first test is written.
+      - name: Test
+        run: poetry run pytest -q || [ $? -eq 5 ]

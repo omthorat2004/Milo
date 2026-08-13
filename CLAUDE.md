@@ -8,15 +8,20 @@ _"how is my resume performing?"_ — never _"who is looking at it?"_
 
 ```
 milo/
-├── .github/            CI workflows          (global, outside packages)
-├── .claude/            Claude Code config    (global, outside packages)
-├── packages/
-│   └── landing/        Next.js marketing + waitlist site  ← the only shipped package today
-└── package.json        npm workspaces root
+├── Makefile            Task runner spanning both languages. Prefer it over raw commands.
+├── .github/            CI: separate JavaScript and Python jobs
+├── .claude/            Claude Code config
+├── package.json        npm workspaces manifest (JavaScript packages only)
+└── packages/
+    ├── landing/        Next.js marketing + waitlist site   (complete, deployed)
+    ├── frontend/       Next.js product app                 (scaffold, no product code yet)
+    └── backend/        FastAPI service, Poetry             (scaffold, no product code yet)
 ```
 
-Future packages (`packages/web` — Next.js product app, `packages/api` — FastAPI backend) are **not
-scaffolded yet**. Do not create empty package folders ahead of real code.
+The root is polyglot. `package.json` and `package-lock.json` belong to the JavaScript workspaces and
+must stay at the root, since npm workspaces requires it. All Python configuration lives in
+`packages/backend`. Never add Python tooling config to the root, and never let Prettier format
+`packages/backend`.
 
 ## Stack
 

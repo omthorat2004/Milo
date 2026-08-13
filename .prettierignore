@@ -5,3 +5,13 @@ dist
 coverage
 package-lock.json
 *.md
+
+# The FastAPI backend is Python-owned. Prettier cannot parse .py, and left
+# unignored it would still rewrite that package's JSON and YAML to JS
+# conventions. Ruff formats everything under packages/backend instead.
+packages/backend/
+
+# Python artifacts, wherever they appear
+__pycache__/
+.venv/
+poetry.lock

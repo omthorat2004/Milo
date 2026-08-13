@@ -11,27 +11,44 @@ held attention. It never tells you _who_ read it, because it never collects that
 ## Status
 
 **Only the landing page is built.** It is production-ready and deployable today, with waitlist
-signups persisted to MongoDB. The product app and backend are not started — no placeholder packages
-are committed for them.
+signups persisted to MongoDB. `frontend` and `backend` are scaffolds: their toolchains, CI and task
+runner all work, but no product code has been written in them yet.
 
 ## Repository layout
 
 ```
 milo/
-├── .github/workflows/     CI: format, lint, typecheck, build
+├── Makefile               Task runner across both languages. Start here.
+├── .github/workflows/     CI: a JavaScript job and a Python job
 ├── .claude/               Claude Code settings
 ├── CLAUDE.md              Product rules and conventions for AI-assisted work
-├── .gitignore .prettierrc .editorconfig .nvmrc
+├── package.json           npm workspaces manifest for the JavaScript packages
+├── .prettierrc .editorconfig .gitignore .nvmrc
 └── packages/
-    └── landing/           Next.js marketing site + waitlist   ← the only package today
+    ├── landing/           Next.js marketing site + waitlist   (built, deployable)
+    ├── frontend/          Next.js product app                 (scaffold)
+    └── backend/           FastAPI service                     (scaffold)
 ```
 
-Planned, not yet created:
+| Package | Purpose | Stack | State |
+| --- | --- | --- | --- |
+| `packages/landing` | Marketing site, waitlist | Next.js, Three.js, MongoDB | Complete |
+| `packages/frontend` | Dashboard, PDF viewer, tracking links | Next.js, TypeScript | Scaffold |
+| `packages/backend` | Auth, events, analytics API | FastAPI, Poetry, MongoDB | Scaffold |
 
-| Package | Purpose | Stack |
-| --- | --- | --- |
-| `packages/web` | Product app — dashboard, PDF viewer, tracking links | Next.js, TypeScript |
-| `packages/api` | Backend — auth, events, analytics | **FastAPI + MongoDB** |
+### Why the root looks the way it does
+
+The repository is polyglot, so the root is deliberately split by owner:
+
+- **`Makefile` is the language-neutral entry point.** `make lint` runs ESLint *and* Ruff. Use make
+  when you want "everything", npm or poetry when you want one language.
+- **`package.json` and `package-lock.json` are the JavaScript workspace manifest.** npm workspaces
+  requires them at the root; that is what hoists a single `node_modules` and lets `landing` and
+  `frontend` share dependencies. They describe the JS packages, not the repository.
+- **Python tooling lives entirely in `packages/backend`** (`pyproject.toml`, `poetry.lock`,
+  `.python-version`). Nothing Python-related sits at the root.
+- **Prettier never touches `packages/backend`.** It cannot parse `.py`, and left unignored it would
+  still rewrite that package's JSON and YAML to JavaScript conventions. Ruff formats it instead.
 
 ## Landing package
 
@@ -46,17 +63,30 @@ the visitor prefers reduced motion or has no WebGL.
 ### Develop
 
 ```bash
-npm install
-npm run dev          # http://localhost:3000
+make install         # npm ci + poetry install
+make dev-landing     # marketing site   http://localhost:3000
+make dev-frontend    # product app      http://localhost:3001
+make dev-backend     # FastAPI          http://localhost:8000
 ```
+
+`make help` lists every target.
 
 ### Verify
 
 ```bash
-npm run lint
-npm run typecheck
-npm run build
-npm run format:check
+make fmt-check       # prettier + ruff format --check
+make lint            # eslint + ruff check
+make typecheck       # tsc + mypy
+make test            # pytest
+make build           # next build, every JS workspace
+```
+
+The JavaScript half is also reachable directly, which is what CI and Vercel use:
+
+```bash
+npm run lint         # all workspaces
+npm run build        # all workspaces
+npm run build:landing
 ```
 
 ## Waitlist
