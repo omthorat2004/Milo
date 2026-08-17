@@ -18,7 +18,7 @@ export default function MarketingHomePage() {
         </p>
 
         <div className="mt-10 flex flex-wrap gap-3">
-          <Button href="/signup">Get started</Button>
+          <Button href="/register">Get started</Button>
           <Button href="/features" variant="secondary">
             See what it does
           </Button>

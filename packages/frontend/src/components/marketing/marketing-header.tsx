@@ -65,7 +65,7 @@ export function MarketingHeader() {
           <Button href="/login" variant="ghost" size="sm">
             Log in
           </Button>
-          <Button href="/signup" size="sm">
+          <Button href="/register" size="sm">
             Get started
           </Button>
         </div>
