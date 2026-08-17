@@ -57,6 +57,30 @@ Milo as a service for others.
 Any dependency added must be compatible with redistribution under these terms. Prefer MIT, Apache
 2.0, BSD and ISC dependencies. Do not add GPL or AGPL dependencies without raising it first.
 
+## Backend layering
+
+`packages/backend/src/milo_backend` is layered. Dependencies point one direction only:
+
+```
+routes -> service -> dao -> MongoDB
+```
+
+| Package | Holds | Never |
+| --- | --- | --- |
+| `core` | settings, database client, security primitives, logging | business rules |
+| `routes` | FastAPI routers, request wiring, status codes | queries, business rules |
+| `service` | business rules, orchestration, the analytics maths | FastAPI or Mongo types |
+| `dao` | Mongo queries, indexes, projections | HTTP concerns, business rules |
+| `schemas` | Pydantic request and response models | database shapes |
+| `model` | domain and persistence models | FastAPI or HTTP |
+| `exception` | domain exceptions and their HTTP handlers | business rules |
+
+A route must not import from `dao`, and a service must not import `fastapi`. Keeping the analytics
+maths in `service` is what lets it be unit tested without a database or a running app.
+
+The privacy rules above apply hardest in `dao` and `model`: there is no visitor-identity column to
+add, and none may be introduced.
+
 ## Conventions
 
 - No `any`. No hardcoded secrets. Validate every input with Zod at the boundary.
