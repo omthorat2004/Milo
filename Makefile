@@ -44,7 +44,7 @@ dev-frontend: ## Run the product app on :3001
 	npm run dev --workspace @milo/frontend
 
 dev-backend: ## Run the FastAPI backend on :8000
-	cd $(BACKEND) && poetry run uvicorn app.main:app --reload --port 8000
+	cd $(BACKEND) && poetry run uvicorn milo_backend.app:app --reload --port 8000
 
 ## ------------------------------------------------------------------ check
 
