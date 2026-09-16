@@ -38,9 +38,23 @@ import block and `__all__`, keep that list alphabetical, ruff's isort rules will
 `get_settings()` is `@lru_cache`d. Never construct `Settings()` in application code, and never read
 `os.environ` directly.
 
-Functions that need config take `settings: Settings | None = None` and fall back to `get_settings()`
-inside the body. `_database.py`, `_cookies.py` and `_rate_limit.py` all do this. It is the seam that
-lets a test pass a hand-built `Settings` without touching the cache.
+
+Also remember that all the variables we need need to add in settings and access from setting only. If any variable is not environment variable put that as a value in settings.
+
+A function takes config one of two ways, never both. `settings: Settings | None = None` with a
+`settings or get_settings()` fallback is banned: it advertises an optional argument that only tests
+ever pass, and leaves two names for one value in every body.
+
+1. **Required keyword argument**, `*, settings: Settings`, whenever our own code calls the function.
+   `set_auth_cookies`, `clear_auth_cookies` and `connect` are the examples. The function stays pure,
+   a test builds a `Settings(...)` and passes it, and nothing has to touch the `lru_cache`. Routes
+   receive it through `Depends(get_settings)` rather than plumbing it by hand.
+2. **No parameter at all**, calling `get_settings()` in the body, only when option 1 is impossible:
+   the signature belongs to a framework (`client_key(request)` is invoked by slowapi), the call
+   happens at import (`build_limiter()`), or the function is already a global accessor and purity is
+   unreachable (`get_database()` reads the module-global client).
+
+When in doubt, option 1.
 
 Secrets are `SecretStr` and are read through the `jwt_secret` and `ip_salt` properties, which raise
 when unset. Do not call `.get_secret_value()` at a call site.

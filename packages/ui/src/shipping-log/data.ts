@@ -1,19 +1,6 @@
-/**
- * The public build log behind /path.
- *
- * Every entry is something that actually shipped, dated the day it shipped.
- * The page derives day numbers, totals and cadence from this array, so adding a
- * feature means adding one entry here and nothing else.
- *
- * Write these for an engineer reading over your shoulder. Name the decision and
- * the constraint, not the marketing outcome. Keep it honest: the value of
- * publishing a dated log is entirely that the dates are real.
- */
-
 export type ShipStatus = "shipped" | "building";
 
 export type ShipEntry = {
-  /** ISO date, YYYY-MM-DD. The day the work actually landed. */
   date: string;
   title: string;
   description: string;
@@ -21,7 +8,6 @@ export type ShipEntry = {
   status: ShipStatus;
 };
 
-/** Newest first. The page groups these by date for display. */
 export const shippingLog: readonly ShipEntry[] = [
   {
     date: "2026-08-13",
@@ -70,7 +56,6 @@ export type ShipDay = {
   entries: readonly ShipEntry[];
 };
 
-/** Groups the log by date, preserving the newest-first order. */
 export function groupByDay(entries: readonly ShipEntry[]): ShipDay[] {
   const days = new Map<string, ShipEntry[]>();
 
@@ -92,7 +77,6 @@ export function formatDate(iso: string): string {
   });
 }
 
-/** Stats shown at the top of /path, all derived rather than hardcoded. */
 export function summarise(entries: readonly ShipEntry[]) {
   const dates = entries.map((entry) => entry.date).sort();
   const first = dates[0];
@@ -114,14 +98,6 @@ export function summarise(entries: readonly ShipEntry[]) {
   };
 }
 
-/**
- * What is coming, deliberately without dates.
- *
- * The whole value of a dated log is that the dates are real, so nothing here
- * claims a day. "Next" is what is actively being picked up, "soon" is queued,
- * "later" is wanted but unscheduled. A missed promise on this page would cost
- * more credibility than the promise ever bought.
- */
 export type PlannedWhen = "next" | "soon" | "later";
 
 export type PlannedEntry = {

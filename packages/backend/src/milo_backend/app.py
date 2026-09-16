@@ -12,8 +12,8 @@ from milo_backend.exception.handlers import register_exception_handlers
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None,None]:
-    await connect()
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    await connect(get_settings())
     try:
         yield
     finally:

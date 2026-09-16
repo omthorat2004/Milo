@@ -11,23 +11,13 @@ import {
 
 type Props = {
   entries: readonly ShipEntry[];
-  /**
-   * `full` is the dedicated /path page: stats header and every entry.
-   * `compact` is an embed, for a landing-page section that links onward.
-   */
+
   variant?: "full" | "compact";
-  /** Caps how many entries render. Useful for the compact embed. */
+
   limit?: number;
   className?: string;
 };
 
-/**
- * Public build log: what shipped, on which day.
- *
- * Presentational only. It derives every number from the entries it is given, so
- * there is no count to forget to update, and both apps render an identical
- * timeline from the same data.
- */
 export function ShippingLog({ entries, variant = "full", limit, className }: Props) {
   const visible = typeof limit === "number" ? entries.slice(0, limit) : entries;
   const days = groupByDay(visible);
@@ -123,14 +113,6 @@ const whenStyles: Record<PlannedWhen, string> = {
   later: "border-sand-300/12 bg-ink-850/40 text-sand-500",
 };
 
-/**
- * What is planned, with no dates attached.
- *
- * Sits above the shipped timeline so the page answers both questions a reader
- * has: what exists, and what is being worked on. Buckets rather than dates,
- * because a missed date on this page would undo the credibility the dated
- * entries below it are there to build.
- */
 export function UpcomingWork({
   entries,
   className,

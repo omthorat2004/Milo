@@ -24,12 +24,6 @@ const base = cn(
 
 type CommonProps = { variant?: Variant; size?: Size; className?: string };
 
-/**
- * Renders a Next `Link` when given an `href`, a `button` otherwise.
- *
- * Cheaper than an `asChild` slot for a marketing surface, where every action is
- * either navigation or a plain button.
- */
 export function Button({
   href,
   variant = "primary",
