@@ -1,18 +1,16 @@
-from milo_backend.core._database import get_database
+from __future__ import annotations
 
-from pymongo.asynchronous.database import AsyncDatabase
+from typing import Any
+
+from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
+
 
 class BaseDAO:
-    
-    
-    collection_name :str
-    
-    def __init__(self,db:AsyncDatabase)->None:
+    collection_name: str
+
+    def __init__(self, db: AsyncIOMotorDatabase[dict[str, Any]]) -> None:
         self.db = db
-        
 
     @property
-    def collection(self):
+    def collection(self) -> AsyncIOMotorCollection[dict[str, Any]]:
         return self.db[self.collection_name]
-    
-    

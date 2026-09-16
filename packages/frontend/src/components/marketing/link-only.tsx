@@ -8,14 +8,6 @@ const worksWith = [
   'Application forms with a "portfolio or resume URL" field',
 ] as const;
 
-/**
- * The limitation, stated before anyone can discover it themselves.
- *
- * Milo can only see what happens on a page it serves. A PDF that leaves your
- * hands reports nothing back, and the trick that would change that, embedding
- * remote content inside the file, is exactly the invisible tracking this
- * product refuses to do.
- */
 export function LinkOnly() {
   return (
     <section className="border-t border-sand-300/8 py-20 sm:py-28">

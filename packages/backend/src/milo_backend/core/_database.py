@@ -12,20 +12,19 @@ logger = logging.getLogger("milo.database")
 _client: AsyncIOMotorClient[dict[str, Any]] | None = None
 
 
-async def connect(settings: Settings | None = None) -> None:
+async def connect(settings: Settings) -> None:
     global _client
 
-    config = settings or get_settings()
     _client = AsyncIOMotorClient(
-        config.mongodb_uri,
-        serverSelectionTimeoutMS=config.mongodb_timeout_ms,
-        connectTimeoutMS=config.mongodb_timeout_ms,
+        settings.mongodb_uri,
+        serverSelectionTimeoutMS=settings.mongodb_timeout_ms,
+        connectTimeoutMS=settings.mongodb_timeout_ms,
         maxPoolSize=10,
         retryWrites=True,
     )
 
     await _client.admin.command("ping")
-    logger.info("Connected to MongoDB database %s", config.mongodb_db)
+    logger.info("Connected to MongoDB database %s", settings.mongodb_db)
 
 
 async def disconnect() -> None:
@@ -43,8 +42,6 @@ def get_client() -> AsyncIOMotorClient[dict[str, Any]]:
     return _client
 
 
-def get_database(
-    settings: Settings | None = None,
-) -> AsyncIOMotorDatabase[dict[str, Any]]:
-    config = settings or get_settings()
-    return get_client()[config.mongodb_db]
+def get_database() -> AsyncIOMotorDatabase[dict[str, Any]]:
+    settings = get_settings()
+    return get_client()[settings.mongodb_db]

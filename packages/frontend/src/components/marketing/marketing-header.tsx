@@ -6,10 +6,6 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/**
- * Every entry must resolve to a route that exists. A dead nav item costs more
- * trust than a missing one, so new links land here only once their page does.
- */
 const navigation = [
   { href: "/features", label: "Features" },
   { href: "/path", label: "Path" },
@@ -56,11 +52,6 @@ export function MarketingHeader() {
           })}
         </nav>
 
-        {/*
-          Both actions render unconditionally. Session-aware navigation waits
-          until authentication exists; guessing at it now would mean writing
-          state we would only have to tear out.
-        */}
         <div className="flex items-center gap-2">
           <Button href="/login" variant="ghost" size="sm">
             Log in

@@ -10,14 +10,6 @@ import { RawStoryScene } from "@/components/marketing/raw-story-scene";
 import { usePrefersReducedMotion } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
-/**
- * The unfiltered version of the pitch, written for people applying to their
- * first roles rather than for senior hires.
- *
- * Blunt, but nothing here is exaggerated: every line is a real consequence of
- * sending a document you cannot see into a process that never reports back.
- */
-
 type Beat = {
   text: string;
   tone: "sent" | "silence" | "gut";
@@ -59,7 +51,6 @@ export function RawStory() {
     return () => window.clearInterval(id);
   }, [reducedMotion, paused]);
 
-  // Reduced motion shows the whole list at once, with no drip and no timer.
   const shown = reducedMotion ? beats.length : visible;
   const sent = beats.slice(0, shown).filter((beat) => beat.tone === "sent").length;
   const finished = shown >= beats.length;
@@ -73,14 +64,10 @@ export function RawStory() {
         ? "slumped"
         : "waiting";
 
-  // Counts applications sent so far, so the paper animation retriggers on each.
   const sendCount = beats.slice(0, shown).filter((beat) => beat.tone === "sent").length;
 
   return (
     <section
-      // overflow-clip, not overflow-hidden: `overflow: hidden` makes this a
-      // scroll container, which silently disables `position: sticky` on the
-      // left column. `overflow: clip` crops the canvas without that side effect.
       className="relative isolate overflow-clip border-y border-sand-300/8 bg-ink-900/40 py-24 sm:py-32"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -88,7 +75,6 @@ export function RawStory() {
       <div className="pointer-events-none absolute inset-0 -z-10 opacity-70">
         <RawStoryScene />
       </div>
-      {/* Keeps the falling cards from competing with the copy over them. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-ink-950 via-ink-950/80 to-ink-950/40"
@@ -104,11 +90,6 @@ export function RawStory() {
             You are not bad at this. You are working blind.
           </h2>
 
-          {/*
-            A named candidate rather than an abstract "you". Aarav is invented,
-            and is the same person on the sample resume rendered in the 3D
-            scenes, so the two surfaces describe one coherent story.
-          */}
           <p className="mt-6 border-l-2 border-clay-400/40 pl-4 text-sm leading-relaxed text-sand-500">
             <span className="text-sand-200">Aarav</span>, 2026 batch. Three projects, one hackathon,
             no internship yet. He has a resume he is proud of and forty applications he has heard

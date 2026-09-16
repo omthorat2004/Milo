@@ -1,11 +1,3 @@
-/*
- * Entry stylesheet for the product app.
- *
- * Tokens and base styles live in packages/styles/globals.css so every Milo app
- * shares one palette. Only the source globs are app-specific: Tailwind's
- * automatic content detection resolves relative to the imported file, which
- * would point into node_modules rather than at this app.
- */
 @import "@milo/styles/globals.css";
 
 @source "../../src";

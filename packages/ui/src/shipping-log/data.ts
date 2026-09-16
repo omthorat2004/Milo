@@ -1,19 +1,6 @@
-/**
- * The public build log behind /path.
- *
- * Every entry is something that actually shipped, dated the day it shipped.
- * The page derives day numbers, totals and cadence from this array, so adding a
- * feature means adding one entry here and nothing else.
- *
- * Write these for an engineer reading over your shoulder. Name the decision and
- * the constraint, not the marketing outcome. Keep it honest: the value of
- * publishing a dated log is entirely that the dates are real.
- */
-
 export type ShipStatus = "shipped" | "building";
 
 export type ShipEntry = {
-  /** ISO date, YYYY-MM-DD. The day the work actually landed. */
   date: string;
   title: string;
   description: string;
@@ -21,8 +8,23 @@ export type ShipEntry = {
   status: ShipStatus;
 };
 
-/** Newest first. The page groups these by date for display. */
 export const shippingLog: readonly ShipEntry[] = [
+  {
+    date: "2026-09-15",
+    title: "Accounts, and a signup that proves you own the address",
+    description:
+      "Register, verify by one-time code, login, refresh, logout and a current-user endpoint, layered routes to service to dao so the rules stay testable with no database and no running app. Codes are HMAC hashed with a server-side pepper before they reach Mongo, and the row keeps only a user id: an email copy and a stored expiry are both facts the users collection already owns, so expiry is derived from last sent, which is the same field the TTL index deletes on. Tokens carry a type claim that decoding checks, so a refresh token cannot be replayed as an access token, and they only ever travel in httpOnly cookies. Passwords are argon2id and deliberately never trimmed, since trimming one silently changes the credential someone typed.",
+    tags: ["Auth", "FastAPI", "MongoDB", "Security"],
+    status: "shipped",
+  },
+  {
+    date: "2026-09-15",
+    title: "Mail that refuses to fail quietly",
+    description:
+      "SMTP delivery derives from the environment: console in development, where the whole message lands in the log so signup works with no mail server, and real delivery in production, which refuses to start on console mode, a local mail catcher host, missing TLS, absent credentials, or a missing code pepper. That last check is not cosmetic, without a shared pepper every worker hashes codes differently and verification fails at random. Rate limiting surfaced its own trap: with headers enabled a limited route must also accept the response object, or it raises on the first request rather than at import.",
+    tags: ["Email", "Configuration", "Reliability"],
+    status: "shipped",
+  },
   {
     date: "2026-08-13",
     title: "Product app, and the design system underneath it",
@@ -70,7 +72,6 @@ export type ShipDay = {
   entries: readonly ShipEntry[];
 };
 
-/** Groups the log by date, preserving the newest-first order. */
 export function groupByDay(entries: readonly ShipEntry[]): ShipDay[] {
   const days = new Map<string, ShipEntry[]>();
 
@@ -92,7 +93,6 @@ export function formatDate(iso: string): string {
   });
 }
 
-/** Stats shown at the top of /path, all derived rather than hardcoded. */
 export function summarise(entries: readonly ShipEntry[]) {
   const dates = entries.map((entry) => entry.date).sort();
   const first = dates[0];
@@ -114,14 +114,6 @@ export function summarise(entries: readonly ShipEntry[]) {
   };
 }
 
-/**
- * What is coming, deliberately without dates.
- *
- * The whole value of a dated log is that the dates are real, so nothing here
- * claims a day. "Next" is what is actively being picked up, "soon" is queued,
- * "later" is wanted but unscheduled. A missed promise on this page would cost
- * more credibility than the promise ever bought.
- */
 export type PlannedWhen = "next" | "soon" | "later";
 
 export type PlannedEntry = {
@@ -133,11 +125,11 @@ export type PlannedEntry = {
 
 export const upcomingWork: readonly PlannedEntry[] = [
   {
-    title: "Accounts and sessions",
+    title: "Sessions in the product app",
     description:
-      "Sign up, log in, log out, with authorisation checks on every protected route so no account can reach another's resumes by changing an id.",
+      "The auth API exists, the app does not use it yet. Session state, the verification screen the register flow already expects, and a guard that keeps signed-out visitors out of the dashboard and signed-in ones out of the login page.",
     when: "next",
-    tags: ["Auth", "Backend"],
+    tags: ["Frontend", "Auth"],
   },
   {
     title: "Create a tracking link",

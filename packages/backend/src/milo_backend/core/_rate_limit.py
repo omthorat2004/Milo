@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from slowapi import Limiter
@@ -28,7 +29,9 @@ def client_key(request: Request) -> str:
 
 def build_limiter() -> Limiter:
     settings = get_settings()
-    defaults = [settings.rate_limit_default] if settings.rate_limit_default else []
+    defaults: list[str | Callable[..., str]] = (
+        [settings.rate_limit_default] if settings.rate_limit_default else []
+    )
 
     return Limiter(
         key_func=client_key,
