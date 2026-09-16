@@ -26,6 +26,15 @@ grep -rnE "^(from|import) fastapi" src/milo_backend/service/  # must be empty
 `schemas` are wire shapes, `model` are persistence shapes. They are allowed to look identical and
 must still be two files, because the day they diverge you do not want to be rewriting routes.
 
+Input normalisation belongs in `schemas`, never halfway down a route or a service. `schemas/auth.py`
+defines the annotated types `Name`, `NormalisedEmail` and `OtpCode`, so every endpoint taking an
+email trims and lowercases it, a name arrives with control characters gone and runs of whitespace
+collapsed, and a code pasted as `123 456` arrives as `123456`. Reuse those aliases rather than
+re-declaring `EmailStr` on a new model, or two endpoints will disagree about what the same address
+is. `Password` is deliberately **not** stripped: trimming a password silently changes the credential
+someone typed. `_normalise()` stays in the service as the domain rule, since a service must be
+correct when called from a test that never went through a schema.
+
 ## core is a private package with a public front door
 
 Every module in `core` is underscore-prefixed and re-exported through `core/__init__.py` with an
@@ -163,6 +172,7 @@ Auth is implemented end to end and is the worked example for every layer: `route
 ```
 POST /auth/register            201, creates the user unverified and emails a code
 POST /auth/verify-email/start  202, resends, subject to the cooldown
+POST /auth/verify-email/status 200, is a code still live, for how long, resend in how long
 POST /auth/verify-otp          200, verifies, then sets both cookies
 POST /auth/login               200, or 403 email_not_verified
 POST /auth/refresh             200, from the refresh cookie

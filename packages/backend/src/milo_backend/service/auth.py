@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import html
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 
 import jwt
 
@@ -55,6 +57,21 @@ class VerificationChallenge:
 
     def resend_after_seconds(self, now: datetime) -> int:
         return max(0, int((self.resend_after - now).total_seconds()))
+
+
+class VerificationState(StrEnum):
+    NONE = "none"
+    PENDING = "pending"
+    VERIFIED = "verified"
+
+
+@dataclass(frozen=True)
+class VerificationSnapshot:
+    email: str
+    state: VerificationState
+    expires_in_seconds: int = 0
+    resend_after_seconds: int = 0
+    attempts_remaining: int = 0
 
 
 class AuthService:
@@ -181,6 +198,34 @@ class AuthService:
 
         return user
 
+    async def verification_status(self, *, email: str) -> VerificationSnapshot:
+        address = _normalise(email)
+        now = datetime.now(UTC)
+
+        user = await self.users.get_by_email(address)
+        if user is None:
+            return VerificationSnapshot(email=address, state=VerificationState.NONE)
+        if user.email_verified:
+            return VerificationSnapshot(email=address, state=VerificationState.VERIFIED)
+
+        record = await self.verifications.get_by_user_id(user.id)
+        if record is None:
+            return VerificationSnapshot(email=address, state=VerificationState.NONE)
+
+        expires_at = _expires_at(record, settings=self.settings)
+        if expires_at <= now:
+            return VerificationSnapshot(email=address, state=VerificationState.NONE)
+
+        return VerificationSnapshot(
+            email=address,
+            state=VerificationState.PENDING,
+            expires_in_seconds=_seconds_between(now, expires_at),
+            resend_after_seconds=_seconds_between(
+                now, _last_sent_at(record) + self.settings.otp_resend_cooldown
+            ),
+            attempts_remaining=max(0, self.settings.otp_max_attempts - record.attempts),
+        )
+
     async def _issue_challenge(
         self, user: User, *, now: datetime
     ) -> VerificationChallenge:
@@ -266,6 +311,10 @@ def _normalise(email: str) -> str:
     return email.strip().lower()
 
 
+def _seconds_between(now: datetime, later: datetime) -> int:
+    return max(0, int((later - now).total_seconds()))
+
+
 def _expires_at(record: EmailVerification, *, settings: Settings) -> datetime:
     return _last_sent_at(record) + settings.otp_expiry
 
@@ -292,7 +341,7 @@ def _verification_html(*, name: str, code: str, settings: Settings) -> str:
     minutes = settings.otp_expire_minutes
     return (
         '<html><body style="font-family:system-ui,sans-serif;color:#1c1917">'
-        f"<p>Hi {name},</p>"
+        f"<p>Hi {html.escape(name)},</p>"
         "<p>Your Milo verification code is</p>"
         f'<p style="font-size:28px;letter-spacing:6px;font-weight:600">{code}</p>'
         f"<p>It expires in {minutes} minutes.</p>"

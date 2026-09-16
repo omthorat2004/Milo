@@ -22,6 +22,9 @@ from milo_backend.schemas.auth import (
     RegisterRequest,
     StartVerificationRequest,
     VerificationPendingResponse,
+    VerificationState,
+    VerificationStatusRequest,
+    VerificationStatusResponse,
     VerifyOtpRequest,
 )
 from milo_backend.service.auth import TokenPair, VerificationChallenge
@@ -63,6 +66,24 @@ async def start_email_verification(
 ) -> VerificationPendingResponse:
     challenge = await service.start_verification(email=payload.email)
     return _pending(challenge)
+
+
+@router.post("/verify-email/status", response_model=VerificationStatusResponse)
+@limiter.limit(lambda: get_settings().rate_limit_verification_status)
+async def verification_status(
+    request: Request,
+    response: Response,
+    payload: VerificationStatusRequest,
+    service: AuthServiceDep,
+) -> VerificationStatusResponse:
+    snapshot = await service.verification_status(email=payload.email)
+    return VerificationStatusResponse(
+        email=snapshot.email,
+        status=VerificationState(snapshot.state.value),
+        expires_in_seconds=snapshot.expires_in_seconds,
+        resend_after_seconds=snapshot.resend_after_seconds,
+        attempts_remaining=snapshot.attempts_remaining,
+    )
 
 
 @router.post("/verify-otp", response_model=AuthResponse)

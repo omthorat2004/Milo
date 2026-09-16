@@ -5,6 +5,9 @@ from milo_backend.schemas.auth import (
     RegisterRequest,
     StartVerificationRequest,
     VerificationPendingResponse,
+    VerificationState,
+    VerificationStatusRequest,
+    VerificationStatusResponse,
     VerifyOtpRequest,
 )
 
@@ -15,5 +18,8 @@ __all__ = [
     "RegisterRequest",
     "StartVerificationRequest",
     "VerificationPendingResponse",
+    "VerificationState",
+    "VerificationStatusRequest",
+    "VerificationStatusResponse",
     "VerifyOtpRequest",
 ]
