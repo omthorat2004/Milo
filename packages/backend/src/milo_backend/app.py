@@ -8,12 +8,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
 
 from milo_backend.core import connect, disconnect, get_settings, limiter
+from milo_backend.dependencies import ensure_indexes
 from milo_backend.exception.handlers import register_exception_handlers
+from milo_backend.routes import auth_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    await connect(get_settings())
+    settings = get_settings()
+    await connect(settings)
+    await ensure_indexes(settings=settings)
     try:
         yield
     finally:
@@ -47,6 +51,8 @@ def create_app() -> FastAPI:
         app.add_middleware(SlowAPIMiddleware)
 
     register_exception_handlers(app)
+
+    app.include_router(auth_router)
 
     return app
 

@@ -91,11 +91,19 @@ Every DAO method is `async` and awaited. Motor returns cursors, not lists, `awai
 with an explicit bound rather than an unbounded one. Indexes belong in `dao`, declared next to the
 queries that need them.
 
-**Known drift to fix when you next touch it:** `dao/_base.py` types `db` as pymongo's `AsyncDatabase`
-while `core/_database.get_database()` returns Motor's `AsyncIOMotorDatabase`. Motor is the declared
-dependency, so make `_base.py` match `core`. That file also lacks `from __future__ import
-annotations`, carries an unused `get_database` import and an untyped `collection` property, and has
-not been through `make fmt-py`.
+`dao/_base.py` types `db` and `collection` as Motor's `AsyncIOMotorDatabase` and
+`AsyncIOMotorCollection`, matching what `core.get_database()` hands it. `dao/auth.py` is the
+reference pair: `UserDAO` owns the unique `email` index, `EmailVerificationDAO` owns a unique
+`user_id` index plus a TTL index on `last_sent_at`, so a spent code deletes itself rather than
+lingering as a guessable row. Indexes are created once at startup by `ensure_indexes(settings=...)`
+in `dependencies/`, called from the lifespan handler.
+
+A verification row stores `user_id` and nothing that the `users` document already answers: no email
+copy, and no `expires_at`, since expiry is `last_sent_at + OTP_EXPIRE_MINUTES`. The TTL window is
+that same expiry plus `OTP_RECORD_GRACE_SECONDS`, so a code submitted a little late still returns
+`verification_code_expired` rather than a confusing `verification_not_found`. `expireAfterSeconds`
+is baked into the index, so `create_indexes` catches Mongo's `IndexOptionsConflict` (85) and rebuilds
+the index when that setting changes.
 
 ## Errors
 
@@ -115,8 +123,13 @@ message reach the client. Handlers are registered most-specific first in `regist
 `limiter` is built once at import from `get_settings()`, so a test that changes rate-limit settings
 must call `get_settings.cache_clear()` and rebuild via `build_limiter()`.
 
-A route decorated with `@limiter.limit(...)` **must** take `request: Request` in its signature or
-slowapi raises at call time. `SlowAPIMiddleware` is only added when `rate_limit_enabled`, and the
+A route decorated with `@limiter.limit(...)` **must** take both `request: Request` and
+`response: Response` in its signature. The first is how slowapi finds the client key, the second is
+where it writes the `X-RateLimit-*` headers, and because `headers_enabled=True` a missing `response`
+raises `parameter 'response' must be an instance of starlette.responses.Response` on the first call,
+not at import. The limit string may be a callable, so
+`@limiter.limit(lambda: get_settings().rate_limit_login)` keeps the number in `Settings` instead of
+freezing it at import. `SlowAPIMiddleware` is only added when `rate_limit_enabled`, and the
 `RateLimitExceeded` handler re-injects headers from `request.state.view_rate_limit`.
 
 `client_key` hashes salted IP + current date and keeps 24 hex characters. That digest is a
@@ -144,18 +157,32 @@ forbidden field, do not add a nullable column "for later".
 
 ## Current state
 
-Scaffolded and empty: `dao/auth.py`, `routes/auth.py`, `dependencies/service.py`, `service/`,
-`model/`, and `schemas/auth.py` (bare `BaseModel` import). `dependencies/` has **no `__init__.py`**,
-add one when you first import from it.
+Auth is implemented end to end and is the worked example for every layer: `routes/auth.py` ->
+`service/auth.py` -> `dao/auth.py`, assembled in `dependencies/service.py`, mounted in `create_app()`.
 
-No router is mounted in `app.py` yet. Mounting is `app.include_router(...)` inside `create_app()`,
-after `register_exception_handlers`.
+```
+POST /auth/register            201, creates the user unverified and emails a code
+POST /auth/verify-email/start  202, resends, subject to the cooldown
+POST /auth/verify-otp          200, verifies, then sets both cookies
+POST /auth/login               200, or 403 email_not_verified
+POST /auth/refresh             200, from the refresh cookie
+POST /auth/logout              204
+GET  /auth/me                  200, through the CurrentUser dependency
+```
 
-`Settings` describes JWTs, but **no JWT or password-hashing library is installed**. The dependency
-set is fastapi, uvicorn, motor, pydantic-settings, slowapi. Implementing auth means adding one
-(PyJWT and argon2-cffi are both permissive-licensed and fine). Milo ships under Elastic License 2.0,
-so any new dependency must be redistributable: prefer MIT, Apache 2.0, BSD, ISC, and raise GPL or
-AGPL before adding it.
+Codes are six digits, HMAC-SHA256 hashed with `OTP_HASH_SECRET` before they reach Mongo, valid ten
+minutes, five attempts, one send per minute. Passwords are argon2id. Tokens are PyJWT HS256 carrying
+a `type` claim that `decode_token` checks, so a refresh token cannot be replayed as an access token,
+and they only ever travel in httpOnly cookies.
+
+The dependency set is fastapi, uvicorn, motor, pydantic-settings, slowapi, pyjwt, argon2-cffi,
+aiosmtplib and email-validator, all permissive. Milo ships under Elastic License 2.0, so any new
+dependency must be redistributable: prefer MIT, Apache 2.0, BSD, ISC, and raise GPL or AGPL before
+adding it.
+
+Still missing: `tests/` holds only `__init__.py`, there is no CSRF defence for the cross-site cookie
+case, `/auth/verify-email/start` answers differently for known and unknown addresses so it leaks
+membership, and nothing beyond auth exists yet, no resumes, tracking links or events.
 
 `pyproject.toml` has no `[tool.ruff]`, `[tool.mypy]` or `[tool.pytest.ini_options]` section, so all
 three run on defaults. `make typecheck` runs plain `mypy src`, which is not strict mode, do not
