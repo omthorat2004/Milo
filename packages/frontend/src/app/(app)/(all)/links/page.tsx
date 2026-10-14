@@ -16,8 +16,8 @@ export default function LinksPage() {
         action={<Button>Create a link</Button>}
       />
 
-      <div className="mt-10 overflow-hidden rounded-card border border-sand-300/12">
-        <div className="hidden grid-cols-[2fr_1fr_1fr_1fr] gap-4 border-b border-sand-300/10 bg-ink-900 px-5 py-3 font-mono text-[11px] tracking-[0.16em] text-sand-700 uppercase sm:grid">
+      <div className="mt-10 overflow-hidden rounded-card border border-surface-border">
+        <div className="hidden grid-cols-[2fr_1fr_1fr_1fr] gap-4 border-b border-surface-border bg-surface px-5 py-3 font-mono text-[11px] tracking-[0.16em] text-foreground-muted uppercase sm:grid">
           <span>Resume</span>
           <span>Views</span>
           <span>Downloads</span>
@@ -28,11 +28,11 @@ export default function LinksPage() {
           title="No links yet"
           description="Paste the public URL of a resume you already host and Milo gives you a short link to share instead."
           action={<Button>Create your first link</Button>}
-          className="rounded-none border-0 bg-ink-900/40"
+          className="rounded-none border-0 bg-surface/40"
         />
       </div>
 
-      <p className="mt-6 text-sm text-sand-700">
+      <p className="mt-6 text-sm text-foreground-muted">
         Creating links needs an account, and accounts are not open yet.
       </p>
     </div>

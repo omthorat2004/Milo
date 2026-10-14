@@ -7,8 +7,8 @@ export default function NotFound() {
   return (
     <Container className="flex min-h-dvh flex-col items-center justify-center text-center">
       <p className="font-mono text-xs tracking-[0.22em] text-signal-400 uppercase">404</p>
-      <h1 className="mt-5 font-display text-4xl text-sand-50">This page isn&rsquo;t here.</h1>
-      <p className="mt-4 max-w-sm text-sand-500">
+      <h1 className="mt-5 font-display text-4xl text-foreground">This page isn&rsquo;t here.</h1>
+      <p className="mt-4 max-w-sm text-foreground-muted">
         The link may be old, or the page may not exist yet, Milo is still being built.
       </p>
       <Button className="mt-8" asChild>

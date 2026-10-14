@@ -9,10 +9,10 @@ export default function MarketingHomePage() {
   return (
     <>
       <section className="mx-auto w-full max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
-        <h1 className="max-w-3xl font-display text-5xl leading-[0.98] text-balance text-sand-50 sm:text-6xl">
+        <h1 className="max-w-3xl font-display text-5xl leading-[0.98] text-balance text-foreground sm:text-6xl">
           Know when your resume gets seen.
         </h1>
-        <p className="mt-7 max-w-xl text-lg leading-relaxed text-sand-500">
+        <p className="mt-7 max-w-xl text-lg leading-relaxed text-foreground-muted">
           Share your resume through Milo and see when it&rsquo;s viewed, downloaded, and where the
           traffic came from. Never who.
         </p>
@@ -29,14 +29,14 @@ export default function MarketingHomePage() {
 
       <LinkOnly />
 
-      <section className="mx-auto w-full max-w-4xl border-t border-sand-300/8 px-5 py-20 sm:px-8">
+      <section className="mx-auto w-full max-w-4xl border-t border-surface-border px-5 py-20 sm:px-8">
         <div className="flex flex-wrap items-baseline justify-between gap-4">
-          <h2 className="font-display text-3xl text-sand-50">Built in the open</h2>
+          <h2 className="font-display text-3xl text-foreground">Built in the open</h2>
           <Link href="/path" className="text-sm text-signal-400 hover:text-signal-300">
             See the full path →
           </Link>
         </div>
-        <p className="mt-4 max-w-xl text-sand-500">
+        <p className="mt-4 max-w-xl text-foreground-muted">
           The last few things that shipped, dated the day they landed.
         </p>
 

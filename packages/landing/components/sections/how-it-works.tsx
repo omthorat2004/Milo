@@ -33,22 +33,24 @@ export function HowItWorks() {
           description="Milo is an analytics layer over a file you already host. Setup is one form, and there is nothing to install."
         />
 
-        <ol className="mt-16 grid gap-px overflow-hidden rounded-card border border-sand-300/12 bg-sand-300/10 md:grid-cols-3">
+        <ol className="mt-16 grid gap-px overflow-hidden rounded-card border border-surface-border bg-surface-border md:grid-cols-3">
           {steps.map((step, index) => (
-            <li key={step.title} className="bg-ink-900 p-8">
+            <li key={step.title} className="bg-surface p-8">
               <div className="flex items-center gap-3">
                 <span className="flex size-9 items-center justify-center rounded-full border border-signal-400/25 bg-signal-900/40">
                   <step.icon className="size-4 text-signal-400" aria-hidden="true" />
                 </span>
-                <span className="font-mono text-xs tracking-[0.2em] text-sand-700">
+                <span className="font-mono text-xs tracking-[0.2em] text-foreground-muted">
                   0{index + 1}
                 </span>
               </div>
 
-              <h3 className="mt-6 font-display text-xl leading-snug text-sand-50">{step.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-sand-500">{step.body}</p>
+              <h3 className="mt-6 font-display text-xl leading-snug text-foreground">
+                {step.title}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-foreground-muted">{step.body}</p>
 
-              <p className="mt-6 truncate rounded-lg border border-sand-300/10 bg-ink-850 px-3 py-2 font-mono text-xs text-sand-300">
+              <p className="mt-6 truncate rounded-lg border border-surface-border bg-background px-3 py-2 font-mono text-xs text-foreground-muted">
                 {step.code}
               </p>
             </li>
@@ -59,11 +61,11 @@ export function HowItWorks() {
           only see a page it serves, so an attached or uploaded PDF reports
           nothing back.
         */}
-        <div className="mt-8 rounded-card border border-sand-300/12 bg-ink-850/50 p-6">
-          <h3 className="font-display text-lg text-sand-50">
+        <div className="mt-8 rounded-card border border-surface-border bg-surface/50 p-6">
+          <h3 className="font-display text-lg text-foreground">
             Milo works on the link, not the file
           </h3>
-          <p className="mt-2.5 text-sm leading-relaxed text-sand-500">
+          <p className="mt-2.5 text-sm leading-relaxed text-foreground-muted">
             Share the Milo link and every open, page turn and download is measurable. Attach the raw
             PDF to an email or upload it to a job portal and Milo sees nothing: a file that leaves
             your hands stops reporting back. Embedding a tracker inside the PDF would change that,

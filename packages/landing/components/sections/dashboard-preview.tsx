@@ -47,40 +47,42 @@ export function DashboardPreview() {
           description="Performance, sources, and per-page attention. No IP, no city, no company name, no identity, because Milo never collects them."
         />
 
-        <div className="mt-14 overflow-hidden rounded-card border border-sand-300/12 bg-ink-900/80">
-          <header className="flex items-center justify-between border-b border-sand-300/10 px-5 py-3.5">
+        <div className="mt-14 overflow-hidden rounded-card border border-surface-border bg-surface/80">
+          <header className="flex items-center justify-between border-b border-surface-border px-5 py-3.5">
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-clay-400/60" />
-              <span className="size-2 rounded-full bg-sand-700/60" />
-              <span className="size-2 rounded-full bg-sand-700/60" />
+              <span className="size-2 rounded-full bg-foreground-muted/40" />
+              <span className="size-2 rounded-full bg-foreground-muted/40" />
             </div>
-            <p className="font-mono text-[11px] tracking-[0.16em] text-sand-700 uppercase">
+            <p className="font-mono text-[11px] tracking-[0.16em] text-foreground-muted uppercase">
               Example data
             </p>
           </header>
 
-          <div className="grid gap-px bg-sand-300/8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-px bg-surface-border sm:grid-cols-2 lg:grid-cols-4">
             {summary.map((card) => (
-              <div key={card.label} className="bg-ink-900 px-5 py-6">
-                <p className="text-xs tracking-wide text-sand-700">{card.label}</p>
-                <p className="mt-2 font-display text-4xl text-sand-50">{card.value}</p>
+              <div key={card.label} className="bg-surface px-5 py-6">
+                <p className="text-xs tracking-wide text-foreground-muted">{card.label}</p>
+                <p className="mt-2 font-display text-4xl text-foreground">{card.value}</p>
               </div>
             ))}
           </div>
 
-          <div className="grid gap-px border-t border-sand-300/10 bg-sand-300/8 lg:grid-cols-3">
+          <div className="grid gap-px border-t border-surface-border bg-surface-border lg:grid-cols-3">
             <Panel title="Traffic sources">
               <ul className="space-y-3">
                 {sources.map((source) => (
                   <li key={source.label} className="flex items-center gap-3">
-                    <span className="w-20 shrink-0 text-xs text-sand-500">{source.label}</span>
-                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink-700">
+                    <span className="w-20 shrink-0 text-xs text-foreground-muted">
+                      {source.label}
+                    </span>
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-hover">
                       <span
                         className="block h-full rounded-full bg-signal-400/80"
                         style={{ width: `${(source.count / maxSource) * 100}%` }}
                       />
                     </span>
-                    <span className="w-5 text-right font-mono text-xs text-sand-300">
+                    <span className="w-5 text-right font-mono text-xs text-foreground-muted">
                       {source.count}
                     </span>
                   </li>
@@ -92,17 +94,17 @@ export function DashboardPreview() {
               <ul className="space-y-4">
                 {pages.map((page) => (
                   <li key={page.label} className="flex items-baseline justify-between gap-3">
-                    <span className="text-xs text-sand-500">{page.label}</span>
-                    <span className="text-xs text-sand-300">
+                    <span className="text-xs text-foreground-muted">{page.label}</span>
+                    <span className="text-xs text-foreground-muted">
                       {page.viewers} viewers
-                      <span className="ml-2 font-mono text-sand-700">{page.time}</span>
+                      <span className="ml-2 font-mono text-foreground-muted">{page.time}</span>
                     </span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-6 border-t border-sand-300/10 pt-4 text-xs text-sand-700">
+              <p className="mt-6 border-t border-surface-border pt-4 text-xs text-foreground-muted">
                 Average reading time
-                <span className="ml-2 font-mono text-sand-100">1m 42s</span>
+                <span className="ml-2 font-mono text-foreground">1m 42s</span>
               </p>
             </Panel>
 
@@ -110,15 +112,15 @@ export function DashboardPreview() {
               <ul className="space-y-3">
                 {activity.map((item, index) => (
                   <li key={index} className="flex items-baseline gap-3 text-xs">
-                    <span className="font-mono text-sand-700">{item.time}</span>
-                    <span className="text-sand-300">{item.event}</span>
-                    <span className="ml-auto text-sand-700">
+                    <span className="font-mono text-foreground-muted">{item.time}</span>
+                    <span className="text-foreground-muted">{item.event}</span>
+                    <span className="ml-auto text-foreground-muted">
                       {item.source} · {item.device}
                     </span>
                   </li>
                 ))}
               </ul>
-              <p className="mt-6 border-t border-sand-300/10 pt-4 text-xs text-sand-700">
+              <p className="mt-6 border-t border-surface-border pt-4 text-xs text-foreground-muted">
                 No name, no company, no location. By design.
               </p>
             </Panel>
@@ -139,8 +141,8 @@ function Panel({
   className?: string;
 }) {
   return (
-    <div className={cn("bg-ink-900 px-5 py-6", className)}>
-      <h3 className="mb-5 font-mono text-[11px] tracking-[0.18em] text-sand-700 uppercase">
+    <div className={cn("bg-surface px-5 py-6", className)}>
+      <h3 className="mb-5 font-mono text-[11px] tracking-[0.18em] text-foreground-muted uppercase">
         {title}
       </h3>
       {children}

@@ -35,27 +35,27 @@ export default function FeaturesPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-5 py-20 sm:px-8 sm:py-28">
       <p className="font-mono text-xs tracking-[0.22em] text-signal-400 uppercase">Features</p>
-      <h1 className="mt-5 font-display text-4xl leading-[1.05] text-balance text-sand-50 sm:text-5xl">
+      <h1 className="mt-5 font-display text-4xl leading-[1.05] text-balance text-foreground sm:text-5xl">
         Everything you get. Nothing you shouldn&rsquo;t.
       </h1>
 
       <div className="mt-14 grid gap-4 sm:grid-cols-2">
         {measured.map(([title, body]) => (
-          <div key={title} className="rounded-card border border-sand-300/12 bg-ink-850/70 p-6">
-            <h2 className="font-display text-lg text-sand-50">{title}</h2>
-            <p className="mt-2.5 text-sm leading-relaxed text-sand-500">{body}</p>
+          <div key={title} className="rounded-card border border-surface-border bg-surface/70 p-6">
+            <h2 className="font-display text-lg text-foreground">{title}</h2>
+            <p className="mt-2.5 text-sm leading-relaxed text-foreground-muted">{body}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 rounded-card border border-sand-300/12 bg-ink-850/40 p-7">
-        <h2 className="font-display text-xl text-sand-50">What Milo will not do</h2>
-        <p className="mt-2 text-sm text-sand-700">
+      <div className="mt-6 rounded-card border border-surface-border bg-surface/40 p-7">
+        <h2 className="font-display text-xl text-foreground">What Milo will not do</h2>
+        <p className="mt-2 text-sm text-foreground-muted">
           These are not gaps waiting to be filled. There is no identity field in the schema.
         </p>
         <ul className="mt-5 space-y-2.5">
           {refused.map((item) => (
-            <li key={item} className="text-sm text-sand-500">
+            <li key={item} className="text-sm text-foreground-muted">
               {item}
             </li>
           ))}

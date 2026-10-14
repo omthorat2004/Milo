@@ -10,11 +10,11 @@ export default function AboutPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-20 sm:px-8 sm:py-28">
       <p className="font-mono text-xs tracking-[0.22em] text-signal-400 uppercase">About</p>
-      <h1 className="mt-5 font-display text-4xl leading-[1.05] text-balance text-sand-50 sm:text-5xl">
+      <h1 className="mt-5 font-display text-4xl leading-[1.05] text-balance text-foreground sm:text-5xl">
         Applying for jobs is the last thing we still do blind.
       </h1>
 
-      <div className="mt-10 space-y-6 text-lg leading-relaxed text-sand-500">
+      <div className="mt-10 space-y-6 text-lg leading-relaxed text-foreground-muted">
         <p>
           You send a resume and hear nothing. You cannot tell the role that never opened it from the
           one that read it twice and passed. So you guess: follow up, or move on.

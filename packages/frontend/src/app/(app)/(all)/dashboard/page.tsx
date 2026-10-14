@@ -23,11 +23,11 @@ export default function DashboardPage() {
         action={<Button href="/links">Create a link</Button>}
       />
 
-      <dl className="mt-10 grid gap-px overflow-hidden rounded-card border border-sand-300/12 bg-sand-300/10 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="mt-10 grid gap-px overflow-hidden rounded-card border border-surface-border bg-surface-border sm:grid-cols-2 lg:grid-cols-4">
         {summary.map((card) => (
-          <div key={card.label} className="bg-ink-900 px-5 py-6">
-            <dt className="text-xs tracking-wide text-sand-700">{card.label}</dt>
-            <dd className="mt-2 font-display text-4xl text-sand-50">{card.value}</dd>
+          <div key={card.label} className="bg-surface px-5 py-6">
+            <dt className="text-xs tracking-wide text-foreground-muted">{card.label}</dt>
+            <dd className="mt-2 font-display text-4xl text-foreground">{card.value}</dd>
           </div>
         ))}
       </dl>
@@ -74,8 +74,10 @@ function Panel({
   className?: string;
 }) {
   return (
-    <div className={`rounded-card border border-sand-300/12 bg-ink-900/60 p-5 ${className ?? ""}`}>
-      <h2 className="font-mono text-[11px] tracking-[0.18em] text-sand-700 uppercase">{title}</h2>
+    <div className={`rounded-card border border-surface-border bg-surface/60 p-5 ${className ?? ""}`}>
+      <h2 className="font-mono text-[11px] tracking-[0.18em] text-foreground-muted uppercase">
+        {title}
+      </h2>
       {children}
     </div>
   );

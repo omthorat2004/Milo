@@ -27,16 +27,16 @@ export function Hero() {
           {siteConfig.status}
         </Badge>
 
-        <h1 className="mt-8 max-w-3xl font-display text-5xl leading-[0.98] text-balance text-sand-50 sm:text-6xl md:text-7xl">
+        <h1 className="mt-8 max-w-3xl font-display text-5xl leading-[0.98] text-balance text-foreground sm:text-6xl md:text-7xl">
           Know when your resume gets seen.
         </h1>
 
-        <p className="mt-7 max-w-xl text-lg leading-relaxed text-sand-500">
+        <p className="mt-7 max-w-xl text-lg leading-relaxed text-foreground-muted">
           Share your resume through Milo and see when it&rsquo;s viewed, downloaded, and where the
           traffic came from.
         </p>
 
-        <p className="mt-4 max-w-xl text-base leading-relaxed text-sand-700">
+        <p className="mt-4 max-w-xl text-base leading-relaxed text-foreground-muted">
           Your resume stays where it already lives. Milo provides the analytics layer.
         </p>
 
@@ -46,7 +46,7 @@ export function Hero() {
 
         <a
           href="#story"
-          className="mt-16 inline-flex items-center gap-2 text-sm text-sand-700 transition-colors hover:text-sand-300"
+          className="mt-16 inline-flex items-center gap-2 text-sm text-foreground-muted transition-colors hover:text-foreground"
         >
           <ArrowDown className="size-4" aria-hidden="true" />
           See how it works

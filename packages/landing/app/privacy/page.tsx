@@ -73,27 +73,27 @@ export default function PrivacyPage() {
     <article className="pt-32 pb-24 sm:pt-40">
       <Container className="max-w-3xl">
         <p className="font-mono text-xs tracking-[0.22em] text-signal-400 uppercase">Privacy</p>
-        <h1 className="mt-5 font-display text-4xl leading-[1.05] text-balance text-sand-50 sm:text-5xl">
+        <h1 className="mt-5 font-display text-4xl leading-[1.05] text-balance text-foreground sm:text-5xl">
           What {siteConfig.name} knows, and what it refuses to.
         </h1>
-        <p className="mt-6 text-lg leading-relaxed text-sand-500">
+        <p className="mt-6 text-lg leading-relaxed text-foreground-muted">
           Plain language, no legal theatre. This describes how the product is built, not a set of
           promises about laws we are not qualified to interpret for you.
         </p>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-2">
           <div className="rounded-card border border-signal-400/20 bg-signal-900/20 p-6">
-            <h2 className="font-display text-lg text-sand-50">Recorded on a resume view</h2>
-            <ul className="mt-4 space-y-2 text-sm text-sand-300">
+            <h2 className="font-display text-lg text-foreground">Recorded on a resume view</h2>
+            <ul className="mt-4 space-y-2 text-sm text-foreground-muted">
               {collectedSignals.map((signal) => (
                 <li key={signal}>{signal}</li>
               ))}
             </ul>
           </div>
 
-          <div className="rounded-card border border-sand-300/12 bg-ink-850/60 p-6">
-            <h2 className="font-display text-lg text-sand-50">Never recorded</h2>
-            <ul className="mt-4 space-y-2 text-sm text-sand-500">
+          <div className="rounded-card border border-surface-border bg-surface/60 p-6">
+            <h2 className="font-display text-lg text-foreground">Never recorded</h2>
+            <ul className="mt-4 space-y-2 text-sm text-foreground-muted">
               {neverCollected.map((item) => (
                 <li key={item}>{item}</li>
               ))}
@@ -104,9 +104,9 @@ export default function PrivacyPage() {
         <div className="mt-16 space-y-12">
           {sections.map((section) => (
             <section key={section.heading}>
-              <h2 className="font-display text-2xl text-sand-50">{section.heading}</h2>
+              <h2 className="font-display text-2xl text-foreground">{section.heading}</h2>
               {section.body.map((paragraph, index) => (
-                <p key={index} className="mt-4 leading-relaxed text-sand-500">
+                <p key={index} className="mt-4 leading-relaxed text-foreground-muted">
                   {paragraph}
                 </p>
               ))}
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
           ))}
         </div>
 
-        <p className="mt-16 border-t border-sand-300/10 pt-8 text-sm text-sand-700">
+        <p className="mt-16 border-t border-surface-border pt-8 text-sm text-foreground-muted">
           Questions about any of this?{" "}
           <Link href="/#waitlist" className="text-signal-400 hover:text-signal-300">
             Join the waitlist

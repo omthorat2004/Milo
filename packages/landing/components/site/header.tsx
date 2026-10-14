@@ -7,6 +7,7 @@ import { Logo } from "@/components/site/logo";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/section";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@milo/ui/theme";
 
 /**
  * Every entry must resolve to something that exists today. No placeholder
@@ -40,11 +41,11 @@ export function Header() {
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
-        scrolled && "border-b border-sand-300/10 bg-ink-950/80 backdrop-blur-md",
+        scrolled && "border-b border-surface-border bg-background/80 backdrop-blur-md",
       )}
     >
       <Container className="flex h-16 items-center justify-between">
-        <Link href="/" aria-label="Milo home" className="text-sand-200">
+        <Link href="/" aria-label="Milo home" className="text-foreground">
           <Logo />
         </Link>
 
@@ -53,16 +54,20 @@ export function Header() {
             <a
               key={item.href}
               href={item.href}
-              className="text-sm text-sand-500 transition-colors hover:text-sand-100"
+              className="text-sm text-foreground-muted transition-colors hover:text-foreground"
             >
               {item.label}
             </a>
           ))}
         </nav>
 
-        <Button size="sm" asChild>
-          <a href="#waitlist">Join the waitlist</a>
-        </Button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle className="flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground" />
+
+          <Button size="sm" asChild>
+            <a href="#waitlist">Join the waitlist</a>
+          </Button>
+        </div>
       </Container>
     </header>
   );

@@ -15,8 +15,10 @@ export function PageHeader({ eyebrow, title, description, action, className }: P
         {eyebrow ? (
           <p className="font-mono text-xs tracking-[0.22em] text-signal-400 uppercase">{eyebrow}</p>
         ) : null}
-        <h1 className="mt-3 font-display text-3xl text-sand-50 sm:text-4xl">{title}</h1>
-        {description ? <p className="mt-3 leading-relaxed text-sand-500">{description}</p> : null}
+        <h1 className="mt-3 font-display text-3xl text-foreground sm:text-4xl">{title}</h1>
+        {description ? (
+          <p className="mt-3 leading-relaxed text-foreground-muted">{description}</p>
+        ) : null}
       </div>
       {action}
     </header>

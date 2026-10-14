@@ -28,16 +28,16 @@ export default function LogsPage() {
         className="mt-10"
       />
 
-      <section className="mt-8 rounded-card border border-sand-300/12 bg-ink-900/50 p-6">
-        <h2 className="font-display text-lg text-sand-50">What an event contains</h2>
+      <section className="mt-8 rounded-card border border-surface-border bg-surface/50 p-6">
+        <h2 className="font-display text-lg text-foreground">What an event contains</h2>
         <ul className="mt-4 space-y-2">
           {recorded.map((item) => (
-            <li key={item} className="text-sm text-sand-500">
+            <li key={item} className="text-sm text-foreground-muted">
               {item}
             </li>
           ))}
         </ul>
-        <p className="mt-5 border-t border-sand-300/10 pt-4 text-sm text-sand-700">
+        <p className="mt-5 border-t border-surface-border pt-4 text-sm text-foreground-muted">
           No IP address, no location, no name, no company. There is no field for them.
         </p>
       </section>

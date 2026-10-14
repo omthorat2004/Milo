@@ -12,7 +12,7 @@ import { Container, Section, SectionHeading } from "@/components/ui/section";
  */
 export function ShippingPath() {
   return (
-    <Section id="path" className="border-t border-sand-300/8">
+    <Section id="path" className="border-t border-surface-border">
       <Container>
         <SectionHeading
           eyebrow="Path"

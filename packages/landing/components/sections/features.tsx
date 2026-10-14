@@ -38,7 +38,7 @@ const features = [
 
 export function Features() {
   return (
-    <Section id="features" className="border-t border-sand-300/8">
+    <Section id="features" className="border-t border-surface-border">
       <Container>
         <SectionHeading
           eyebrow="Features"
@@ -50,8 +50,8 @@ export function Features() {
           {features.map((feature) => (
             <Card key={feature.title}>
               <feature.icon className="size-5 text-signal-400" aria-hidden="true" />
-              <h3 className="mt-5 font-display text-lg text-sand-50">{feature.title}</h3>
-              <p className="mt-2.5 text-sm leading-relaxed text-sand-500">{feature.body}</p>
+              <h3 className="mt-5 font-display text-lg text-foreground">{feature.title}</h3>
+              <p className="mt-2.5 text-sm leading-relaxed text-foreground-muted">{feature.body}</p>
             </Card>
           ))}
         </div>

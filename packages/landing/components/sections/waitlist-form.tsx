@@ -72,7 +72,7 @@ export function WaitlistForm({ source, className, size = "md" }: Props) {
         role="status"
       >
         <Check className="size-4 shrink-0 text-signal-400" aria-hidden="true" />
-        <p className="text-sm text-signal-200">{message}</p>
+        <p className="text-sm text-foreground">{message}</p>
       </div>
     );
   }
@@ -104,14 +104,12 @@ export function WaitlistForm({ source, className, size = "md" }: Props) {
           aria-describedby={message ? statusId : undefined}
           aria-invalid={status === "error"}
           className={cn(
-            "w-full min-w-0 flex-1 rounded-full border bg-ink-850/80 text-sand-100",
-            // sand-500 rather than sand-700: the dimmer token fell below 4.5:1
-            // against the field background.
-            "placeholder:text-sand-500 focus:outline-none",
+            "w-full min-w-0 flex-1 rounded-full border bg-surface text-foreground",
+            "placeholder:text-foreground-muted focus:outline-none",
             "transition-colors duration-200",
             status === "error"
               ? "border-clay-400/70"
-              : "border-sand-300/20 focus:border-signal-400/60",
+              : "border-surface-border focus:border-signal-400/60",
             // 16px minimum on the font size, or iOS Safari zooms on focus.
             size === "lg" ? "h-14 px-6 text-base" : "h-11 px-5 text-sm",
           )}
@@ -147,7 +145,10 @@ export function WaitlistForm({ source, className, size = "md" }: Props) {
       <p
         id={statusId}
         role={status === "error" ? "alert" : undefined}
-        className={cn("mt-3 text-[13px]", status === "error" ? "text-clay-400" : "text-sand-500")}
+        className={cn(
+          "mt-3 text-[13px]",
+          status === "error" ? "text-clay-400" : "text-foreground-muted",
+        )}
       >
         {message || "No spam. One email when Milo opens up, then nothing."}
       </p>

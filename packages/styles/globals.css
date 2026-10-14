@@ -1,5 +1,53 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Semantic theme tokens. Everything else in this file (ink-*, sand-*,
+ * signal-*, clay-*) is the raw palette and never changes with the theme —
+ * these are the tokens that do. Light is the default (:root); applying
+ * `.dark` to <html> (see @milo/ui/theme) overrides them. Only components
+ * that use these semantic tokens (bg-background, text-foreground, etc.)
+ * respond to the toggle; a component styled directly with bg-ink-950 stays
+ * dark regardless of theme, by design, until it's migrated. See the
+ * `theming` skill before adding a token or styling a themed surface.
+ *
+ * Grouped by role, light value first on each line, dark override directly
+ * below it in the `.dark` block — keep that pairing when adding a token so
+ * the two values are easy to eyeball against each other.
+ */
+:root {
+  /* Page canvas */
+  --color-background: var(--color-sand-50);
+  --color-background-elevated: #ffffff;
+
+  /* Text */
+  --color-foreground: var(--color-ink-950);
+  --color-foreground-muted: var(--color-sand-700);
+
+  /* Cards, panels, nav rails */
+  --color-surface: #ffffff;
+  --color-surface-border: color-mix(in srgb, var(--color-ink-950) 10%, transparent);
+
+  /* Hover/active tint over a surface or the page canvas — never a flat
+     color, always mixed, so it reads as a shade of whatever sits under it
+     instead of a new, unrelated color. */
+  --color-surface-hover: color-mix(in srgb, var(--color-ink-950) 6%, transparent);
+}
+
+.dark {
+  --color-background: var(--color-ink-950);
+  --color-background-elevated: var(--color-ink-900);
+
+  --color-foreground: var(--color-sand-100);
+  --color-foreground-muted: var(--color-sand-500);
+
+  --color-surface: var(--color-ink-850);
+  --color-surface-border: color-mix(in srgb, var(--color-sand-100) 10%, transparent);
+
+  --color-surface-hover: color-mix(in srgb, var(--color-sand-100) 8%, transparent);
+}
+
 @theme {
   --color-ink-950: #060807;
   --color-ink-900: #0a0d0c;
@@ -97,19 +145,45 @@
   }
 }
 
+/*
+ * Re-declared under `inline` so Tailwind generates bg-background,
+ * text-foreground, bg-surface, border-surface-border, etc. that resolve the
+ * `:root`/`.dark` variable above at paint time, instead of baking in
+ * whichever value was active at build time.
+ */
+@theme inline {
+  --color-background: var(--color-background);
+  --color-background-elevated: var(--color-background-elevated);
+  --color-foreground: var(--color-foreground);
+  --color-foreground-muted: var(--color-foreground-muted);
+  --color-surface: var(--color-surface);
+  --color-surface-border: var(--color-surface-border);
+  --color-surface-hover: var(--color-surface-hover);
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    color-scheme: light dark;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html:not(.dark) {
+    color-scheme: light;
   }
 
   body {
-    background-color: var(--color-ink-950);
-    color: var(--color-sand-100);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   ::selection {
@@ -135,6 +209,28 @@
       transition-duration: 0.01ms !important;
     }
   }
+}
+
+/*
+ * Theme-toggle circular reveal (see @milo/ui ThemeToggle). We disable the
+ * browser's default cross-fade and drive the reveal ourselves with a
+ * clip-path animation on ::view-transition-new(root), expanding a circle
+ * from the toggle button outward. The old snapshot just sits underneath,
+ * unanimated, so the effect reads as the new theme sweeping in rather than
+ * an instant swap.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
 }
 
 @utility text-balance {

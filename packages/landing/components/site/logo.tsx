@@ -19,7 +19,7 @@ export function Logo({ className }: { className?: string }) {
         <circle cx="12" cy="14" r="2" className="fill-signal-400" />
         <circle cx="12" cy="14" r="4.6" className="stroke-signal-400/45" strokeWidth="1" />
       </svg>
-      <span className="font-display text-lg tracking-tight text-sand-50">Milo</span>
+      <span className="font-display text-lg tracking-tight text-foreground">Milo</span>
     </span>
   );
 }
