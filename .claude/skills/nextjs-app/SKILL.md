@@ -57,9 +57,18 @@ template turns it into `"Dashboard, Milo"`. A dynamic page uses `generateMetadat
 
 ## Design tokens
 
-Tokens live once, in `packages/styles/globals.css` under `@theme`, and every app imports them. Do not
-redefine a colour locally and do not reach for a stock Tailwind palette, `text-gray-500` is a bug in
-this codebase. Use `ink-*` (surfaces), `sand-*` (paper and copy), `clay-400` (accent), `signal-*`.
+Tokens live once, in `packages/styles/globals.css`, and every app imports them. Do not redefine a
+colour locally and do not reach for a stock Tailwind palette, `text-gray-500` is a bug in this
+codebase.
+
+The app supports light/dark via `@milo/ui/theme` and `ThemeToggle`. **Default to the semantic
+tokens** — `bg-background`, `bg-surface`, `text-foreground`, `text-foreground-muted`,
+`border-surface-border` — for anything that's part of the page surface (backgrounds, body text,
+dividers), since only these flip with the toggle. The raw palette (`ink-*`, `sand-*`, `clay-400`,
+`signal-*`) is fixed regardless of theme; reach for it only when the design wants a colour that
+genuinely shouldn't change (the `signal-*` accent, `clay-400`). See the `theming` skill before
+styling or restyling any component — plenty of existing chrome still hardcodes the raw palette from
+before the toggle existed and is mid-migration, don't copy those classes into new code.
 
 **Green means a recorded signal.** `signal-*` is reserved for something Milo actually measured, an
 open, a download, a tracked event, plus the primary button. Never as decoration.
@@ -127,11 +136,19 @@ interest-cohort=()`. That header is product policy, not boilerplate. Do not rela
 
 ## Current state
 
-UI shell only. `auth-form.tsx` posts nowhere and says so on screen, the dashboard, links and logs
-pages render hardcoded zeros through `EmptyState`. There is no data layer, no auth client, no API
-module, and no `middleware.ts`, so nothing guards `(app)` routes yet. When wiring real data, delete
-the "not wired to an account system yet" notices in `(auth)/layout.tsx` and `auth-form.tsx` in the
-same change, stale reassurance about not sending data is worse than none.
+Dashboard, links, and logs pages still render hardcoded zeros through `EmptyState` — no data layer
+beyond auth yet.
+
+Auth is live end to end for login: `lib/auth.api.ts` + `lib/axios.config.ts` talk to the backend, a
+Zustand store (`stores/auth-store.ts`) + TanStack Query hooks (`hooks/use-auth-session.ts`,
+`hooks/use-auth-mutations.ts`) track session state and drive `register`/`login`, and
+`PrivateProvider`/`GuestOnlyProvider` (`components/providers/private-provider.tsx`) guard `(app)`
+and `(auth)` respectively — see `docs/frontend-architecture.md`'s "Auth state" section for the full
+wiring. This guard is **client-side only**, there is still no `middleware.ts`, so a protected page's
+server-rendered shell can still reach the browser before the guard redirects; don't assume
+request-time protection exists until that's added. Register does not fully work yet — the backend
+requires OTP verification before a session exists, and there is no OTP-entry page to complete that
+step, so a registered visitor still can't log in until that's built.
 
 ## Before declaring work done
 
