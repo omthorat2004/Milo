@@ -175,13 +175,7 @@ POST /auth/verify-email/start  202, resends, subject to the cooldown
 POST /auth/verify-email/status 200, is a code still live, for how long, resend in how long
 POST /auth/verify-otp          200, verifies, then sets both cookies
 POST /auth/login               200, or 403 email_not_verified
-POST /auth/refresh             200, from the refresh cookie
-POST /auth/logout              204
-GET  /auth/me                  200, through the CurrentUser dependency
-```
-
-Codes are six digits, HMAC-SHA256 hashed with `OTP_HASH_SECRET` before they reach Mongo, valid ten
-minutes, five attempts, one send per minute. Passwords are argon2id. Tokens are PyJWT HS256 carrying
+POST /auth/refresh   w are argon2id. Tokens are PyJWT HS256 carrying
 a `type` claim that `decode_token` checks, so a refresh token cannot be replayed as an access token,
 and they only ever travel in httpOnly cookies.
 

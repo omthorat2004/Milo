@@ -13,4 +13,6 @@ class BaseDAO:
 
     @property
     def collection(self) -> AsyncIOMotorCollection[dict[str, Any]]:
+        if self.db is None:
+            raise RuntimeError("MongoDB is not connected. Did the lifespan handler run?")
         return self.db[self.collection_name]

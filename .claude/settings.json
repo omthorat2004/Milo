@@ -2,6 +2,15 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
+      "Bash(make help)",
+      "Bash(make lint)",
+      "Bash(make lint-js)",
+      "Bash(make lint-py)",
+      "Bash(make typecheck)",
+      "Bash(make test)",
+      "Bash(make test-py)",
+      "Bash(make build)",
+      "Bash(make fmt-check)",
       "Bash(npm run lint)",
       "Bash(npm run lint:*)",
       "Bash(npm run typecheck)",
@@ -9,11 +18,72 @@
       "Bash(npm run build)",
       "Bash(npm run build:*)",
       "Bash(npm run format:check)",
+      "Bash(npm run format:check:*)",
       "Bash(npm ls:*)",
+      "Bash(poetry run pytest:*)",
+      "Bash(poetry run ruff check:*)",
+      "Bash(poetry run ruff format --check:*)",
+      "Bash(poetry run mypy:*)",
       "Bash(git status)",
       "Bash(git diff:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git blame:*)"
     ],
-    "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./**/.env)", "Read(./**/.env.*)"]
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.development)",
+      "Read(./.env.development.local)",
+      "Read(./.env.production)",
+      "Read(./.env.production.local)",
+      "Read(./.env.staging)",
+      "Read(./.env.staging.local)",
+      "Read(./**/.env)",
+      "Read(./**/.env.local)",
+      "Read(./**/.env.development)",
+      "Read(./**/.env.development.local)",
+      "Read(./**/.env.production)",
+      "Read(./**/.env.production.local)",
+      "Read(./**/.env.staging)",
+      "Read(./**/.env.staging.local)",
+      "Bash(rm -rf:*)",
+      "Bash(rm -r -f:*)",
+      "Bash(sudo rm:*)",
+      "Bash(git push:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(git clean -fdx:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(git branch -D:*)",
+      "Bash(git rebase:*)",
+      "Bash(git commit --amend:*)",
+      "Bash(git tag -d:*)",
+      "Bash(git config:*)",
+      "Bash(npm publish:*)",
+      "Bash(npm unpublish:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(chmod -R:*)",
+      "Bash(chown -R:*)",
+      "Bash(kill -9:*)",
+      "Bash(:(){:|:&};:)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/omthorat/Milo && { make lint && make typecheck && make test; }; code=$?; if [ $code -eq 0 ]; then echo \"{\\\"systemMessage\\\": \\\"lint, typecheck, and test all passed\\\"}\"; else echo \"{\\\"systemMessage\\\": \\\"lint/typecheck/test failed (exit $code) - run make lint, make typecheck, make test to see details\\\"}\"; fi",
+            "timeout": 180,
+            "statusMessage": "Running lint, typecheck, and test..."
+          }
+        ]
+      }
+    ]
   }
 }
