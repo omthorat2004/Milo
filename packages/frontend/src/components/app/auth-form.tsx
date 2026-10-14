@@ -2,7 +2,10 @@
 
 import { useId, useState } from "react";
 
+import { OtpForm } from "@/components/app/otp-form";
 import { Button } from "@/components/ui/button";
+import { useLoginMutation, useRegisterMutation } from "@/hooks/use-auth-mutations";
+import { getAuthErrorMessage } from "@/lib/auth.api";
 import { cn } from "@/lib/utils";
 
 type Mode = "login" | "register";
@@ -12,23 +15,53 @@ type Props = {
   className?: string;
 };
 
+type PendingVerification = { email: string; resendAfterSeconds: number };
+
 export function AuthForm({ mode, className }: Props) {
   const emailId = useId();
   const passwordId = useId();
   const nameId = useId();
   const noticeId = useId();
 
-  const [submitted, setSubmitted] = useState(false);
+  const loginMutation = useLoginMutation();
+  const registerMutation = useRegisterMutation();
+  const mutation = mode === "register" ? registerMutation : loginMutation;
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const [pending, setPending] = useState<PendingVerification | null>(null);
+
+  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+    const data = new FormData(event.currentTarget);
+    const email = String(data.get("email"));
+    const password = String(data.get("password"));
+
+    if (mode === "register") {
+      registerMutation.mutate(
+        { name: String(data.get("name")), email, password },
+        {
+          onSuccess: (challenge) =>
+            setPending({ email: challenge.email, resendAfterSeconds: challenge.resend_after_seconds }),
+        },
+      );
+    } else {
+      loginMutation.mutate({ email, password });
+    }
   }
+
+  if (mode === "register" && pending) {
+    return (
+      <OtpForm email={pending.email} resendAfterSeconds={pending.resendAfterSeconds} className={className} />
+    );
+  }
+
+  const notice = mutation.isError
+    ? getAuthErrorMessage(mutation.error, "Something went wrong. Try again.")
+    : null;
 
   return (
     <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
       {mode === "register" ? (
-        <Field id={nameId} label="Name" name="name" type="text" autoComplete="name" />
+        <Field id={nameId} label="Name" name="name" type="text" autoComplete="name" required />
       ) : null}
 
       <Field
@@ -51,18 +84,28 @@ export function AuthForm({ mode, className }: Props) {
         hint={mode === "register" ? "At least 12 characters." : undefined}
       />
 
-      <Button type="submit" className="w-full" aria-describedby={submitted ? noticeId : undefined}>
-        {mode === "register" ? "Create account" : "Log in"}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={mutation.isPending}
+        aria-describedby={notice ? noticeId : undefined}
+      >
+        {mode === "register"
+          ? mutation.isPending
+            ? "Creating account…"
+            : "Create account"
+          : mutation.isPending
+            ? "Logging in…"
+            : "Log in"}
       </Button>
 
-      {submitted ? (
+      {notice ? (
         <p
           id={noticeId}
           role="status"
-          className="rounded-lg border border-clay-400/25 bg-clay-400/5 px-4 py-3 text-sm text-sand-300"
+          className="rounded-lg border border-clay-400/25 bg-clay-400/5 px-4 py-3 text-sm text-foreground-muted"
         >
-          Accounts are not open yet, so this form does not submit anywhere. Nothing you typed was
-          sent or stored.
+          {notice}
         </p>
       ) : null}
     </form>
@@ -83,19 +126,19 @@ type FieldProps = {
 function Field({ id, label, hint, ...props }: FieldProps) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm text-sand-300">
+      <label htmlFor={id} className="block text-sm text-foreground-muted">
         {label}
       </label>
       <input
         id={id}
         {...props}
         className={cn(
-          "mt-2 h-11 w-full rounded-lg border border-sand-300/20 bg-ink-850/80 px-4 text-base",
-          "text-sand-100 placeholder:text-sand-500",
+          "mt-2 h-11 w-full rounded-lg border border-surface-border bg-surface px-4 text-base",
+          "text-foreground placeholder:text-foreground-muted",
           "transition-colors focus:border-signal-400/60 focus:outline-none",
         )}
       />
-      {hint ? <p className="mt-1.5 text-xs text-sand-700">{hint}</p> : null}
+      {hint ? <p className="mt-1.5 text-xs text-foreground-muted">{hint}</p> : null}
     </div>
   );
 }

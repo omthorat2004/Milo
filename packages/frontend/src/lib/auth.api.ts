@@ -1,3 +1,5 @@
+import { isAxiosError } from "axios";
+
 import { api } from "@/lib/axios.config";
 
 export type AuthUser = {
@@ -61,4 +63,15 @@ export async function logout(): Promise<void> {
 export async function me(): Promise<AuthUser> {
   const { data } = await api.get<AuthEnvelope>("/auth/me");
   return data.user;
+}
+
+/**
+ * Backend errors arrive as `{ code, msg }` (see docs/api-design.md). Render `msg`; branch on
+ * `code` only where the caller actually needs to (e.g. `email_not_verified`), never on status text.
+ */
+export function getAuthErrorMessage(error: unknown, fallback: string): string {
+  if (isAxiosError<{ code?: string; msg?: string }>(error) && error.response?.data?.msg) {
+    return error.response.data.msg;
+  }
+  return fallback;
 }

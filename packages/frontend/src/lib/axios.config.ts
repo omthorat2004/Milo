@@ -1,5 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
+import { useAuthStore } from "@/stores/auth-store";
+
 type RetryConfig = InternalAxiosRequestConfig & { retried?: boolean };
 
 export const api = axios.create({
@@ -31,7 +33,16 @@ api.interceptors.response.use(
     if (!canRetry) return Promise.reject(error);
 
     config.retried = true;
-    await refreshSession();
+
+    try {
+      await refreshSession();
+    } catch (refreshError) {
+      // Refresh token is gone or expired — the backend already dropped its
+      // cookies on that failed request. Just clear local state so guarded
+      // routes redirect to /login; nothing client-side to clean up.
+      useAuthStore.getState().clearAuth();
+      return Promise.reject(refreshError);
+    }
 
     return api.request(config);
   },
