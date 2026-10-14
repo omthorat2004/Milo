@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import html
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -16,6 +15,8 @@ from milo_backend.core import (
     hash_otp,
     hash_password,
     send_email,
+    verification_html,
+    verification_text,
     verify_otp,
     verify_password,
 )
@@ -251,10 +252,10 @@ class AuthService:
         await send_email(
             to=user.email,
             subject=f"{code} is your Milo verification code",
-            text_body=_verification_text(
+            text_body=verification_text(
                 name=user.name, code=code, settings=self.settings
             ),
-            html_body=_verification_html(
+            html_body=verification_html(
                 name=user.name, code=code, settings=self.settings
             ),
             settings=self.settings,
@@ -325,27 +326,3 @@ def _last_sent_at(record: EmailVerification) -> datetime:
 
 def _as_utc(value: datetime) -> datetime:
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
-
-
-def _verification_text(*, name: str, code: str, settings: Settings) -> str:
-    minutes = settings.otp_expire_minutes
-    return (
-        f"Hi {name},\n\n"
-        f"Your Milo verification code is {code}.\n"
-        f"It expires in {minutes} minutes.\n\n"
-        "If you did not create a Milo account, ignore this email.\n"
-    )
-
-
-def _verification_html(*, name: str, code: str, settings: Settings) -> str:
-    minutes = settings.otp_expire_minutes
-    return (
-        '<html><body style="font-family:system-ui,sans-serif;color:#1c1917">'
-        f"<p>Hi {html.escape(name)},</p>"
-        "<p>Your Milo verification code is</p>"
-        f'<p style="font-size:28px;letter-spacing:6px;font-weight:600">{code}</p>'
-        f"<p>It expires in {minutes} minutes.</p>"
-        '<p style="color:#78716c;font-size:13px">If you did not create a Milo account, '
-        "ignore this email.</p>"
-        "</body></html>"
-    )

@@ -115,7 +115,9 @@ async def login(
 
 
 @router.post("/refresh", response_model=AuthResponse)
+@limiter.limit(lambda: get_settings().rate_limit_refresh)
 async def refresh(
+    request: Request,
     response: Response,
     service: AuthServiceDep,
     settings: SettingsDep,
@@ -130,7 +132,8 @@ async def refresh(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(response: Response, settings: SettingsDep) -> None:
+@limiter.limit(lambda: get_settings().rate_limit_logout)
+async def logout(request: Request, response: Response, settings: SettingsDep) -> None:
     clear_auth_cookies(response, settings=settings)
 
 

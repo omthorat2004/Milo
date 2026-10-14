@@ -87,6 +87,8 @@ class Settings(BaseSettings):
     rate_limit_verify_otp: str = "10/minute"
     rate_limit_resend_otp: str = "5/hour"
     rate_limit_verification_status: str = "30/minute"
+    rate_limit_refresh: str = "30/minute"
+    rate_limit_logout: str = "20/minute"
     ip_hash_salt: SecretStr | None = None
 
     @property
