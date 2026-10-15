@@ -10,6 +10,14 @@ export type ShipEntry = {
 
 export const shippingLog: readonly ShipEntry[] = [
   {
+    date: "2026-10-15",
+    title: "The product app now actually logs you in",
+    description:
+      "Register and login call the real backend instead of sitting next to it unused. A Zustand store holds the session as plain client state; a TanStack Query check against /auth/me mirrors into it once at the root, and PrivateProvider/GuestOnlyProvider read that same flag to redirect a signed-out visitor out of the dashboard, never rendering it for a frame, and a signed-in one out of the login page. The verification screen the register flow already expected now exists at /verify: it resolves live against /auth/verify-email/status on every mount, including a hard refresh, and only sends a fresh code when nothing is already pending, so the resend cooldown survives a refresh instead of resetting and a refresh never fires a duplicate email. That same resolve step also closed a bug where an already-verified email used to fall through into sending another code and hit the backend's own already-verified error.",
+    tags: ["Frontend", "Auth", "React Query", "Zustand"],
+    status: "shipped",
+  },
+  {
     date: "2026-09-15",
     title: "Accounts, and a signup that proves you own the address",
     description:
@@ -124,13 +132,6 @@ export type PlannedEntry = {
 };
 
 export const upcomingWork: readonly PlannedEntry[] = [
-  {
-    title: "Sessions in the product app",
-    description:
-      "The auth API exists, the app does not use it yet. Session state, the verification screen the register flow already expects, and a guard that keeps signed-out visitors out of the dashboard and signed-in ones out of the login page.",
-    when: "next",
-    tags: ["Frontend", "Auth"],
-  },
   {
     title: "Create a tracking link",
     description:

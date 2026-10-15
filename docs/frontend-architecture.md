@@ -16,7 +16,7 @@ helper.
 ```
 src/app/
 ├── (marketing)/        public: /, /about, /features     — own layout, no auth
-├── (auth)/             /login, /register                — own layout, guest-only (see Auth state)
+├── (auth)/             /login, /register, /verify       — own layout, guest-only (see Auth state)
 └── (app)/              authenticated product surface, guarded (see Auth state)
     ├── (all)/          cross-workspace views: /dashboard, /links, /logs
     └── [id]/           workspace/resume-scoped: /[id]/dashboard, /[id]/links, /[id]/logs
@@ -84,30 +84,44 @@ All backend I/O goes through `src/lib/`:
   `baseURL`/`timeout` come from `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_API_TIMEOUT_MS`, never
   hardcoded. A response interceptor auto-retries exactly once on a 401 by calling
   `POST /auth/refresh` first (coalesced via a shared in-flight `refreshing` promise, so concurrent
-  401s don't trigger N refresh calls) — `config.url !== "/auth/refresh"` guards against an
-  infinite loop when the refresh call itself 401s. If that refresh call fails, the interceptor
-  clears the Zustand auth store (see Auth state below) so the UI reacts immediately instead of
-  staying in a stale "logged in" state until the next guarded navigation.
+  401s don't trigger N refresh calls). A module-augmented `ignoreRefresh?: boolean` field on
+  `AxiosRequestConfig` opts a call out of this entirely — the refresh call itself sets it on its own
+  request (replacing a more brittle `config.url !== "/auth/refresh"` check), and every
+  session-independent `auth.api.ts` call (`register`, `login`, `startVerification`,
+  `verificationStatus`, `verifyOtp`, `logout`) sets it too, since a 401 from any of them is a real
+  domain error, never a stale access token. `me()` is the one call that doesn't set it, so it's the
+  one that benefits from the refresh-and-retry. If the refresh call fails, the interceptor clears
+  the Zustand auth store (see Auth state below) so the UI reacts immediately instead of staying in a
+  stale "logged in" state until the next guarded navigation.
 - **`auth.api.ts`** — typed wrapper functions (`register`, `login`, `logout`, `me`,
   `startVerification`, `verificationStatus`, `verifyOtp`) over the `/auth/*` endpoints in
-  [api-design.md](./api-design.md). This is the pattern for any new backend resource: one
-  `<resource>.api.ts` file exporting typed functions that call `api`, never a raw `fetch`/`axios`
-  call scattered in a component.
+  [api-design.md](./api-design.md), plus `getAuthErrorMessage()` for rendering the backend's
+  `{ code, msg }` shape. This is the pattern for any new backend resource: one `<resource>.api.ts`
+  file exporting typed functions that call `api`, never a raw `fetch`/`axios` call scattered in a
+  component.
 
 `auth-form.tsx` calls `register`/`login` through `hooks/use-auth-mutations.ts`
-(`useLoginMutation`/`useRegisterMutation`, both thin `useMutation` wrappers over `auth.api.ts`).
+(`useLoginMutation`/`useRegisterMutation`, thin `useMutation` wrappers over `auth.api.ts`).
 `useLoginMutation` writes the returned user straight into `auth-store.ts` on success (and seeds the
 `useAuthSession` query cache so it doesn't immediately re-fetch `/auth/me`) — it does not redirect
 itself, `GuestOnlyProvider`'s own effect picks up the new `isAuthenticated` and navigates to
 `/dashboard`. `useRegisterMutation` doesn't touch the store, since registering doesn't establish a
-session; the backend requires OTP verification first (`startVerification`/`verifyOtp`), and there is
-no OTP-entry page yet — `auth-form.tsx` just shows the `VerificationPending.msg` from the response.
-Mutation errors render via `getAuthErrorMessage()` (in `auth.api.ts`), which reads the backend's
-`{ code, msg }` shape and falls back to a generic message for anything else (e.g. a network error).
+session; the backend requires OTP verification first.
 
-**Known gap:** no OTP-entry page/flow exists yet, so a visitor who registers has no way to finish
-verification and actually log in through the UI. That's the next concrete step in this vertical
-slice, not a redesign.
+**The OTP step lives at `/verify?email=...`** (`app/(auth)/verify/page.tsx`), not as inline state in
+`auth-form.tsx`. `auth-form.tsx` only ever does one thing on a path that needs verification:
+`router.push`\`/verify?email=\${email}\`. Three cases route there: register succeeding, register
+failing with `resend_too_soon` (a code is already pending — e.g. a previous attempt), and login
+failing with `email_not_verified`. The `/verify` page's client child, `verify-status.tsx`, is the
+one place that actually resolves what to show: `useResolveVerificationMutation`
+(`use-auth-mutations.ts`) calls `verificationStatus` first — cheap, side-effect-free, and the thing
+that gives the OTP step a *live* resend cooldown on every mount, including a hard refresh, instead
+of a client-only countdown a refresh would reset — and only falls through to `startVerification`
+(which sends another email) when there's genuinely no code pending yet. An already-verified email is
+reported as such and redirects to `/login` rather than hitting `EmailAlreadyVerified`. The actual
+code-entry UI (`otp-form.tsx`) is unchanged by any of this — it only ever renders once a pending
+challenge (email + resend cooldown) is known, regardless of whether that came from registering or
+from `verify-status.tsx`'s own resolution.
 
 ## Components
 
@@ -115,13 +129,16 @@ See [component-building.md](./component-building.md) for the conventions. Curren
 
 - `components/ui/` — generic, app-agnostic primitives. Currently just `button.tsx` (variant/size
   maps, polymorphic `href` → renders a `next/link` instead of a `<button>`).
-- `components/app/` — product-surface components: `app-nav.tsx`, `auth-form.tsx`,
-  `empty-state.tsx`, `page-header.tsx`, `milo-mark.tsx` (the wordmark/logo).
+- `components/app/` — product-surface components: `app-nav.tsx`, `auth-form.tsx`, `otp-form.tsx`
+  (the code-entry UI), `verify-status.tsx` (the `/verify` page's client child — resolves and
+  branches on verification status, see Auth state above), `empty-state.tsx`, `page-header.tsx`,
+  `milo-mark.tsx` (the wordmark/logo).
 - `components/providers/` — `auth-provider.tsx`, `private-provider.tsx` (see Auth state above).
 - `components/marketing/` — this package also has its own marketing component tree (separate from
   `packages/landing`'s), including `raw-story.tsx`/`raw-story-scene.tsx` (a 3D scene — belongs under
   the `three-js-scenes` skill's conventions when touched).
-- `hooks/use-media-query.ts`, `hooks/use-auth-session.ts` — shared hooks.
+- `hooks/use-media-query.ts`, `hooks/use-auth-session.ts`, `hooks/use-auth-mutations.ts` — shared
+  hooks.
 - `stores/auth-store.ts` — the one Zustand store so far; see Auth state above before adding a
   second one, most new client state should live here or in a component, not in a new store.
 

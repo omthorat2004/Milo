@@ -7,6 +7,7 @@ import {
   login,
   register,
   startVerification,
+  verificationStatus,
   verifyOtp,
   type AuthUser,
   type EmailInput,
@@ -77,5 +78,48 @@ export function useResendOtpMutation(): UseMutationResult<
 > {
   return useMutation({
     mutationFn: startVerification,
+  });
+}
+
+export type VerificationChallenge =
+  | { status: "pending"; email: string; resendAfterSeconds: number }
+  | { status: "verified"; email: string };
+
+/**
+ * The single source of truth the /verify page (and login's email_not_verified handler) resolves
+ * against. Always checks /auth/verify-email/status first — cheap, side-effect-free, and what gives
+ * the OTP step its live cooldown on every page load/refresh — and only calls startVerification
+ * (which sends another email) when there's genuinely no pending code yet. An already-verified
+ * email is reported as such rather than falling through into startVerification, which would
+ * otherwise hit EmailAlreadyVerified.
+ */
+export function useResolveVerificationMutation(): UseMutationResult<
+  VerificationChallenge,
+  unknown,
+  EmailInput
+> {
+  return useMutation({
+    mutationFn: async ({ email }) => {
+      const status = await verificationStatus({ email });
+
+      if (status.status === "verified") {
+        return { status: "verified", email: status.email } as const;
+      }
+
+      if (status.status === "pending") {
+        return {
+          status: "pending",
+          email: status.email,
+          resendAfterSeconds: status.resend_after_seconds,
+        } as const;
+      }
+
+      const challenge = await startVerification({ email });
+      return {
+        status: "pending",
+        email: challenge.email,
+        resendAfterSeconds: challenge.resend_after_seconds,
+      } as const;
+    },
   });
 }

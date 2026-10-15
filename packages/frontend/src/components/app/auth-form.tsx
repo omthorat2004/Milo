@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useState } from "react";
+import { isAxiosError } from "axios";
+import { useRouter } from "next/navigation";
+import { useId } from "react";
 
-import { OtpForm } from "@/components/app/otp-form";
 import { Button } from "@/components/ui/button";
 import { useLoginMutation, useRegisterMutation } from "@/hooks/use-auth-mutations";
 import { getAuthErrorMessage } from "@/lib/auth.api";
@@ -15,19 +16,22 @@ type Props = {
   className?: string;
 };
 
-type PendingVerification = { email: string; resendAfterSeconds: number };
-
 export function AuthForm({ mode, className }: Props) {
   const emailId = useId();
   const passwordId = useId();
   const nameId = useId();
   const noticeId = useId();
+  const router = useRouter();
 
   const loginMutation = useLoginMutation();
   const registerMutation = useRegisterMutation();
   const mutation = mode === "register" ? registerMutation : loginMutation;
 
-  const [pending, setPending] = useState<PendingVerification | null>(null);
+  function goToVerify(email: string) {
+    // /verify re-resolves status live (see verify-status.tsx) — it's always safe to land here,
+    // whether a code was just sent or one was already pending.
+    router.push(`/verify?email=${encodeURIComponent(email)}`);
+  }
 
   function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,18 +43,32 @@ export function AuthForm({ mode, className }: Props) {
       registerMutation.mutate(
         { name: String(data.get("name")), email, password },
         {
-          onSuccess: (challenge) =>
-            setPending({ email: challenge.email, resendAfterSeconds: challenge.resend_after_seconds }),
+          onSuccess: () => goToVerify(email),
+          onError: (error) => {
+            // A code is already pending for this email (e.g. a previous register attempt) —
+            // /verify will find it via status rather than this being a dead end.
+            const alreadyPending =
+              isAxiosError<{ code?: string }>(error) &&
+              error.response?.data?.code === "resend_too_soon";
+            if (alreadyPending) goToVerify(email);
+          },
         },
       );
-    } else {
-      loginMutation.mutate({ email, password });
+      return;
     }
-  }
 
-  if (mode === "register" && pending) {
-    return (
-      <OtpForm email={pending.email} resendAfterSeconds={pending.resendAfterSeconds} className={className} />
+    loginMutation.mutate(
+      { email, password },
+      {
+        onError: (error) => {
+          // Right credentials, unverified account — send them to finish verification instead of
+          // a dead-end error.
+          const needsVerification =
+            isAxiosError<{ code?: string }>(error) &&
+            error.response?.data?.code === "email_not_verified";
+          if (needsVerification) goToVerify(email);
+        },
+      },
     );
   }
 
@@ -81,6 +99,7 @@ export function AuthForm({ mode, className }: Props) {
         type="password"
         autoComplete={mode === "register" ? "new-password" : "current-password"}
         required
+        minLength={mode === "register" ? 12 : undefined}
         hint={mode === "register" ? "At least 12 characters." : undefined}
       />
 
@@ -120,6 +139,7 @@ type FieldProps = {
   autoComplete?: string;
   placeholder?: string;
   required?: boolean;
+  minLength?: number;
   hint?: string;
 };
 

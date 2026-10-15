@@ -47,7 +47,7 @@ writing:
 | --- | --- |
 | `packages/landing` | Complete, deployed. Marketing site + waitlist signup (`POST /api/waitlist`), MongoDB-backed. |
 | `packages/backend` | Auth vertical slice is implemented end-to-end: register, email verification (OTP), login, refresh, logout, `/me`. See [backend-architecture.md](./backend-architecture.md). No resume, tracking-link, or analytics-event features exist yet. |
-| `packages/frontend` | App Router shell exists for marketing/auth/app route groups, including a `[id]` workspace-scoped segment. The auth *API client* (`lib/auth.api.ts`, `lib/axios.config.ts`) is wired to the backend, client-side session state/route guards are live (Zustand store + TanStack Query session check + `PrivateProvider`/`GuestOnlyProvider`), and `AuthForm` now calls `register`/`login` for real via `hooks/use-auth-mutations.ts` — see [frontend-architecture.md](./frontend-architecture.md). Login fully works end-to-end; register does not, since there's no OTP-entry page yet to complete the backend's required verification step. |
+| `packages/frontend` | App Router shell exists for marketing/auth/app route groups, including a `[id]` workspace-scoped segment. Auth is fully live end-to-end: the API client (`lib/auth.api.ts`, `lib/axios.config.ts`), client-side session state/route guards (Zustand store + TanStack Query + `PrivateProvider`/`GuestOnlyProvider`), and the register/login/OTP-verify flow (`AuthForm` → `/verify?email=...` → `OtpForm`) all work through the real UI — see [frontend-architecture.md](./frontend-architecture.md). |
 
 ## Near-term product surface (not yet built)
 

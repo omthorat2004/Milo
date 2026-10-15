@@ -59,6 +59,7 @@ export function OtpForm({ email, resendAfterSeconds, className }: Props) {
           type="text"
           inputMode="numeric"
           pattern="\d{4,10}"
+          minLength={6}
           autoComplete="one-time-code"
           placeholder="123456"
           required

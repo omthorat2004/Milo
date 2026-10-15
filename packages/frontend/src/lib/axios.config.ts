@@ -2,6 +2,18 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { useAuthStore } from "@/stores/auth-store";
 
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    /**
+     * Set true on a request that must never trigger the 401 refresh-and-retry below — every call
+     * that doesn't depend on an existing session (register, login, verify-otp, the refresh call
+     * itself, ...). Defaults to false/unset, so any other authenticated request gets the
+     * refresh-and-retry automatically with no per-call opt-in needed.
+     */
+    ignoreRefresh?: boolean;
+  }
+}
+
 type RetryConfig = InternalAxiosRequestConfig & { retried?: boolean };
 
 export const api = axios.create({
@@ -13,9 +25,11 @@ export const api = axios.create({
 let refreshing: Promise<unknown> | null = null;
 
 function refreshSession(): Promise<unknown> {
-  refreshing ??= api.post("/auth/refresh").finally(() => {
-    refreshing = null;
-  });
+  refreshing ??= api
+    .post("/auth/refresh", undefined, { ignoreRefresh: true })
+    .finally(() => {
+      refreshing = null;
+    });
 
   return refreshing;
 }
@@ -28,7 +42,7 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       config !== undefined &&
       !config.retried &&
-      config.url !== "/auth/refresh";
+      !config.ignoreRefresh;
 
     if (!canRetry) return Promise.reject(error);
 

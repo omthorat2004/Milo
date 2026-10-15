@@ -146,9 +146,10 @@ Zustand store (`stores/auth-store.ts`) + TanStack Query hooks (`hooks/use-auth-s
 and `(auth)` respectively — see `docs/frontend-architecture.md`'s "Auth state" section for the full
 wiring. This guard is **client-side only**, there is still no `middleware.ts`, so a protected page's
 server-rendered shell can still reach the browser before the guard redirects; don't assume
-request-time protection exists until that's added. Register does not fully work yet — the backend
-requires OTP verification before a session exists, and there is no OTP-entry page to complete that
-step, so a registered visitor still can't log in until that's built.
+request-time protection exists until that's added. Register is fully live too — it lands on
+`/verify?email=...` (`components/app/verify-status.tsx`), which resolves live against
+`verification-email/status` so the OTP step's resend cooldown survives a refresh instead of resetting.
+Login routes into the same `/verify` flow on `email_not_verified`.
 
 ## Before declaring work done
 
