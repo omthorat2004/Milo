@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { EmptyState } from "@/components/app/empty-state";
+import { LinksTable } from "@/components/app/links-table";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 
@@ -13,28 +13,20 @@ export default function LinksPage() {
         eyebrow="Tracking links"
         title="Links"
         description="One link per resume, or one per application if you want to tell them apart. Your PDF stays where it already lives; Milo stores the URL, not the file."
-        action={<Button>Create a link</Button>}
+        action={<Button href="/links/new">Create a link</Button>}
       />
 
       <div className="mt-10 overflow-hidden rounded-card border border-surface-border">
-        <div className="hidden grid-cols-[2fr_1fr_1fr_1fr] gap-4 border-b border-surface-border bg-surface px-5 py-3 font-mono text-[11px] tracking-[0.16em] text-foreground-muted uppercase sm:grid">
+        <div className="hidden grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 border-b border-surface-border bg-surface px-5 py-3 font-mono text-[11px] tracking-[0.16em] text-foreground-muted uppercase sm:grid">
           <span>Resume</span>
           <span>Views</span>
           <span>Downloads</span>
           <span>Created</span>
+          <span className="sr-only">Actions</span>
         </div>
 
-        <EmptyState
-          title="No links yet"
-          description="Paste the public URL of a resume you already host and Milo gives you a short link to share instead."
-          action={<Button>Create your first link</Button>}
-          className="rounded-none border-0 bg-surface/40"
-        />
+        <LinksTable />
       </div>
-
-      <p className="mt-6 text-sm text-foreground-muted">
-        Creating links needs an account, and accounts are not open yet.
-      </p>
     </div>
   );
 }

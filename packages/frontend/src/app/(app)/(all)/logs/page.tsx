@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { EmptyState } from "@/components/app/empty-state";
+import { AccountLogs } from "@/components/app/account-logs";
 import { PageHeader } from "@/components/app/page-header";
 
 export const metadata: Metadata = { title: "Logs" };
@@ -22,11 +22,7 @@ export default function LogsPage() {
         description="The raw events behind the dashboard, newest first. Everything Milo knows about a view is on this page: if it is not here, it was never collected."
       />
 
-      <EmptyState
-        title="No events recorded"
-        description="Opens, page views and downloads appear here the moment someone uses one of your links."
-        className="mt-10"
-      />
+      <AccountLogs />
 
       <section className="mt-8 rounded-card border border-surface-border bg-surface/50 p-6">
         <h2 className="font-display text-lg text-foreground">What an event contains</h2>
