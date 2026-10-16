@@ -72,7 +72,7 @@
   --color-signal-900: #0c2e22;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display), ui-serif, Georgia, serif;
+  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 
   --radius-card: 1rem;
 

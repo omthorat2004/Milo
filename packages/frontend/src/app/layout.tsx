@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Inter } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 
 import { themeInitScript } from "@milo/ui/theme";
 
@@ -9,9 +9,8 @@ import { Provider } from "./provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
-const display = Instrument_Serif({
+const display = Space_Grotesk({
   subsets: ["latin"],
-  weight: "400",
   variable: "--font-display",
   display: "swap",
 });
