@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Work_Sans } from "next/font/google";
+import { Instrument_Serif, Inter } from "next/font/google";
 
 import { themeInitScript } from "@milo/ui/theme";
 
@@ -7,10 +7,11 @@ import "./globals.css";
 
 import { Provider } from "./provider";
 
-const bodyFont = Work_Sans({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const bodyFont = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
-const display = Outfit({
+const display = Instrument_Serif({
   subsets: ["latin"],
+  weight: "400",
   variable: "--font-display",
   display: "swap",
 });

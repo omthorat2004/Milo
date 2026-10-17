@@ -73,12 +73,16 @@ before the toggle existed and is mid-migration, don't copy those classes into ne
 **Green means a recorded signal.** `signal-*` is reserved for something Milo actually measured, an
 open, a download, a tracked event, plus the primary button. Never as decoration.
 
-`font-display` is Sora and belongs to headings and big numbers. Body copy is `font-sans` (Inter).
-**Milo's type system is sans-serif only** — this was a deliberate switch away from the original
-Instrument Serif display face (too thin to read crisply at a glance); don't reintroduce a serif
-font for headlines without the user explicitly asking to revisit that. `packages/landing` mirrors
-the same Sora/Inter pairing for brand consistency. Cards use `rounded-card`. Both fonts are wired as
-CSS variables in `app/layout.tsx`, do not add a second `next/font` call.
+`font-display` is Instrument Serif and belongs to headings and big numbers. Body copy is
+`font-sans` (Inter). **This pairing has been changed and reverted several times** (serif →
+Sora → Outfit, then back to Instrument Serif; body Inter → Work Sans, then back to Inter) — treat
+whatever's actually in `app/layout.tsx` as the source of truth over this paragraph, and if asked to
+change fonts again, confirm the exact target (ideally by inspecting a live reference like the
+deployed Vercel URL's computed `font-family`, not by guessing from a verbal description) before
+editing, since this has thrashed enough to be worth double-checking first. `packages/landing`
+mirrors whatever `packages/frontend` uses for brand consistency, change them together. Cards use
+`rounded-card`. Both fonts are wired as CSS variables in `app/layout.tsx`, do not add a second
+`next/font` call.
 
 Tailwind v4 has no config file. Content detection resolves relative to the imported stylesheet, which
 would point into `node_modules`, so `app/globals.css` lists `@source "../../src"` and
