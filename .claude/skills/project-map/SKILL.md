@@ -68,13 +68,21 @@ Full narrative of how these pieces fit together (not just the file list) is in
 `docs/frontend-architecture.md`'s "Auth state" section — read that before changing how session
 state flows, this file only tells you where to look.
 
+## Public pages: sitemap & robots
+
+`packages/landing/app/sitemap.ts` and `packages/landing/app/robots.ts` are the only sitemap/robots
+files in the repo — `packages/frontend` has none, and shouldn't: everything under `(app)` is
+authenticated product surface, not something search engines should index. See the `seo` skill for
+how to maintain these and the rest of `packages/landing`'s metadata/discoverability surface.
+
 ## Everything else (non-auth)
 
-The rest of the product surface — resumes, tracking links, the dashboard's real analytics — doesn't
-exist yet. `(app)/(all)/dashboard|links|logs/page.tsx` and the `[id]`-scoped equivalents render
-hardcoded zeros through `components/app/empty-state.tsx`. Don't assume a `*.api.ts` or `dao/`
-module exists for any of that; check `docs/business-requirements.md`'s "Current state" table before
-building against it.
+Tracking links now have a frontend CRUD surface (`(app)/(all)/dashboard|links|logs` and the
+`[id]`-scoped equivalents, plus `(all)/links/new`), but it runs entirely against an in-memory mock
+store (`stores/links-store.ts`, `lib/links-analytics.ts`) — there is still no backend `Link` model,
+DAO, service, or route, and no Mongo collection for it. Don't assume a `*.api.ts` or `dao/` module
+exists for links; check `docs/business-requirements.md`'s "Current state" table before building
+against it.
 
 `packages/ui/src/shipping-log/` is the public "build in the open" changelog data (`/path` on both
 `landing` and `frontend`) — see the `shipping-log-writer` subagent for how/when to update it.

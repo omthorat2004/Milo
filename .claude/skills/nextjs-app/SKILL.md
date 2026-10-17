@@ -73,9 +73,12 @@ before the toggle existed and is mid-migration, don't copy those classes into ne
 **Green means a recorded signal.** `signal-*` is reserved for something Milo actually measured, an
 open, a download, a tracked event, plus the primary button. Never as decoration.
 
-`font-display` is Instrument Serif and belongs to headings and big numbers. Body copy is
-`font-sans`. Cards use `rounded-card`. Both fonts are wired as CSS variables in `app/layout.tsx`, do
-not add a second `next/font` call.
+`font-display` is Sora and belongs to headings and big numbers. Body copy is `font-sans` (Inter).
+**Milo's type system is sans-serif only** — this was a deliberate switch away from the original
+Instrument Serif display face (too thin to read crisply at a glance); don't reintroduce a serif
+font for headlines without the user explicitly asking to revisit that. `packages/landing` mirrors
+the same Sora/Inter pairing for brand consistency. Cards use `rounded-card`. Both fonts are wired as
+CSS variables in `app/layout.tsx`, do not add a second `next/font` call.
 
 Tailwind v4 has no config file. Content detection resolves relative to the imported stylesheet, which
 would point into `node_modules`, so `app/globals.css` lists `@source "../../src"` and
@@ -136,8 +139,11 @@ interest-cohort=()`. That header is product policy, not boilerplate. Do not rela
 
 ## Current state
 
-Dashboard, links, and logs pages still render hardcoded zeros through `EmptyState` — no data layer
-beyond auth yet.
+Dashboard, links, and logs pages (both `(all)` and `[id]`-scoped) have full create/view/edit/delete
+UI for tracking links, but it runs against an in-memory Zustand mock store
+(`stores/links-store.ts`, `lib/links-analytics.ts`) — there is still no backend `Link` API. See the
+`project-map` skill's "Everything else (non-auth)" section before assuming a `*.api.ts` or `dao/`
+module exists for links.
 
 Auth is live end to end for login: `lib/auth.api.ts` + `lib/axios.config.ts` talk to the backend, a
 Zustand store (`stores/auth-store.ts`) + TanStack Query hooks (`hooks/use-auth-session.ts`,
