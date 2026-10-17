@@ -1,5 +1,6 @@
 import { ArrowDown } from "lucide-react";
 
+import { HeroResumeCard } from "@/components/sections/hero-resume-card";
 import { WaitlistForm } from "@/components/sections/waitlist-form";
 import { Badge } from "@/components/ui/card";
 import { Container } from "@/components/ui/section";
@@ -17,6 +18,8 @@ export function Hero() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-56 -z-10 h-[32rem] bg-[radial-gradient(45%_45%_at_60%_50%,rgba(63,207,142,0.10),transparent_70%)]"
       />
+
+      <HeroResumeCard />
 
       <Container>
         <Badge>

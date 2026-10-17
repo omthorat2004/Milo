@@ -1,6 +1,7 @@
 import { ShippingLog, shippingLog } from "@milo/ui/shipping-log";
 import Link from "next/link";
 
+import { HeroResumeCard } from "@/components/marketing/hero-resume-card";
 import { LinkOnly } from "@/components/marketing/link-only";
 import { RawStory } from "@/components/marketing/raw-story";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,9 @@ import { Button } from "@/components/ui/button";
 export default function MarketingHomePage() {
   return (
     <>
-      <section className="mx-auto w-full max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
+      <section className="relative mx-auto w-full max-w-6xl px-5 py-24 sm:px-8 sm:py-32">
+        <HeroResumeCard />
+
         <h1 className="max-w-3xl font-display text-5xl leading-[0.98] text-balance text-foreground sm:text-6xl">
           Know when your resume gets seen.
         </h1>

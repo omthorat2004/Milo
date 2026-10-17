@@ -143,6 +143,53 @@
       transform: scale(1.6);
     }
   }
+
+  /* A signal arriving, then clearing, on a loop: for a badge that represents a
+     tracked event landing in real time (e.g. "Viewed" on the hero's resume
+     card), not a one-shot entrance. */
+  --animate-view-pulse: view-pulse 6s ease-in-out infinite;
+
+  @keyframes view-pulse {
+    0%,
+    100% {
+      opacity: 0;
+      transform: translateY(4px) scale(0.96);
+    }
+    12%,
+    32% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    44% {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+  }
+
+  /* A reading line travelling down a document, on a loop: the "being viewed
+     right now" counterpart to view-pulse's "a view just landed" badge. */
+  --animate-scan-line: scan-line 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+
+  @keyframes scan-line {
+    0% {
+      top: 6%;
+      opacity: 0;
+    }
+    8% {
+      opacity: 1;
+    }
+    85% {
+      opacity: 1;
+    }
+    95% {
+      top: 92%;
+      opacity: 0;
+    }
+    100% {
+      top: 92%;
+      opacity: 0;
+    }
+  }
 }
 
 /*
