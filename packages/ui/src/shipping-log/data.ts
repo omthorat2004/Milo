@@ -10,6 +10,22 @@ export type ShipEntry = {
 
 export const shippingLog: readonly ShipEntry[] = [
   {
+    date: "2026-10-17",
+    title: "A resume card that reads itself, on both marketing sites",
+    description:
+      "Decorative, not data: a CSS-only mockup sits in each hero, each site rendering its own take so the two brand treatments stay distinct, landing's tilted with a looping \"Viewed\" badge, the product app's upright with a line that scans down the page. Every row is an abstract bar, never invented resume text, and the whole thing is aria-hidden since the headline already carries the meaning. No Three.js: each page already runs one WebGL canvas elsewhere and the house rule is one per page. A global prefers-reduced-motion rule already collapses every animation duration to near-zero, so neither card needed its own escape hatch to stay still for a visitor who's asked for that.",
+    tags: ["Frontend", "Marketing", "CSS", "Accessibility"],
+    status: "shipped",
+  },
+  {
+    date: "2026-10-16",
+    title: "Tracking links, working end to end against a stand-in store",
+    description:
+      "The links, dashboard and logs pages stop being empty states: create a link, see it on the account-wide and per-link dashboards, edit it, delete it with a confirm step that also drops its events. A Zustand store holds the links and their view/download events in memory, seeded with a couple of examples, and a small set of pure functions turns raw events into the numbers the UI shows (views, unique viewers by session id, download rate, traffic sources, per-page dwell time) — the same shape the real backend will eventually return, so swapping in the actual Link API later is a matter of replacing the store, not the pages. There is no backend for any of this yet; refreshing the tab resets it.",
+    tags: ["Frontend", "Zustand", "Analytics"],
+    status: "building",
+  },
+  {
     date: "2026-10-15",
     title: "The product app now actually logs you in",
     description:
