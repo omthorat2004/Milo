@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Inter } from "next/font/google";
+import { Outfit, Work_Sans } from "next/font/google";
 
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
@@ -8,15 +8,14 @@ import { themeInitScript } from "@milo/ui/theme";
 
 import "./globals.css";
 
-const inter = Inter({
+const bodyFont = Work_Sans({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
-const display = Instrument_Serif({
+const display = Outfit({
   subsets: ["latin"],
-  weight: "400",
   variable: "--font-display",
   display: "swap",
 });
@@ -55,7 +54,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${display.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${bodyFont.variable} ${display.variable}`} suppressHydrationWarning>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
         {/* Runs before hydration to set the theme class — see theme-script.ts */}
         <script

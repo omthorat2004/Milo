@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Outfit, Work_Sans } from "next/font/google";
 
 import { themeInitScript } from "@milo/ui/theme";
 
@@ -7,9 +7,9 @@ import "./globals.css";
 
 import { Provider } from "./provider";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const bodyFont = Work_Sans({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
-const display = Space_Grotesk({
+const display = Outfit({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
@@ -31,7 +31,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${display.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${bodyFont.variable} ${display.variable}`} suppressHydrationWarning>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
         {/* Runs before hydration to set the theme class — see theme-script.ts */}
         <script
