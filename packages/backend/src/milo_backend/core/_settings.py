@@ -9,6 +9,8 @@ from typing import Annotated, Literal
 from pydantic import EmailStr, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from milo_backend.core._dev_secrets import get_or_create_dev_secret
+
 ENV_FILES = (".env", ".env.development", ".env.local")
 
 MIN_SECRET_LENGTH = 32
@@ -175,7 +177,7 @@ class Settings(BaseSettings):
                     "JWT_SECRET_KEY must be set in production. "
                     "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(48))'"
                 )
-            self.jwt_secret_key = SecretStr(secrets.token_urlsafe(48))
+            self.jwt_secret_key = SecretStr(get_or_create_dev_secret("jwt_secret_key"))
 
         if self.otp_hash_secret is None:
             if self.is_production:
@@ -184,7 +186,9 @@ class Settings(BaseSettings):
                     "hashes codes differently and verification fails at random. "
                     "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(48))'"
                 )
-            self.otp_hash_secret = SecretStr(secrets.token_urlsafe(48))
+            self.otp_hash_secret = SecretStr(
+                get_or_create_dev_secret("otp_hash_secret")
+            )
 
         return self
 

@@ -25,6 +25,9 @@ coverage/
 .env.*
 !.env.example
 
+# dev-only auto-generated secrets cache (packages/backend), never commit
+.dev-secrets.json
+
 # local waitlist signups, contains real email addresses
 .data/
 
