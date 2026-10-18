@@ -13,7 +13,14 @@ type Props = {
   onCancel: () => void;
 };
 
-export function ConfirmDialog({ open, title, description, confirmLabel, onConfirm, onCancel }: Props) {
+export function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+}: Props) {
   const titleId = useId();
   const descriptionId = useId();
 

@@ -57,7 +57,9 @@ export function LinkSettings({ linkId }: { linkId: string }) {
           variant="secondary"
           size="sm"
           className="mt-4"
-          onClick={() => updateLink(link.id, { status: link.status === "active" ? "paused" : "active" })}
+          onClick={() =>
+            updateLink(link.id, { status: link.status === "active" ? "paused" : "active" })
+          }
         >
           {link.status === "active" ? "Pause link" : "Reactivate link"}
         </Button>
@@ -68,7 +70,8 @@ export function LinkSettings({ linkId }: { linkId: string }) {
           Delete link
         </h2>
         <p className="mt-3 text-sm text-foreground-muted">
-          Permanently deletes this link and every event recorded against it. This can&apos;t be undone.
+          Permanently deletes this link and every event recorded against it. This can&apos;t be
+          undone.
         </p>
         <Button
           type="button"

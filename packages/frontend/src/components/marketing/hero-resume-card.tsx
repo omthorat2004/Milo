@@ -38,7 +38,7 @@ export function HeroResumeCard() {
         ))}
 
         {/* The core product claim, visualised: a page being read, on a loop. */}
-        <div className="animate-scan-line motion-reduce:hidden absolute inset-x-5 h-px bg-gradient-to-r from-transparent via-signal-400 to-transparent shadow-[0_0_8px_1px] shadow-signal-400/70" />
+        <div className="absolute inset-x-5 h-px animate-scan-line bg-gradient-to-r from-transparent via-signal-400 to-transparent shadow-[0_0_8px_1px] shadow-signal-400/70 motion-reduce:hidden" />
       </div>
     </div>
   );

@@ -9,7 +9,9 @@ export function Footer() {
       <Container className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 text-foreground-muted">
           <Logo />
-          <span className="text-xs text-foreground-muted">Resume analytics without surveillance.</span>
+          <span className="text-xs text-foreground-muted">
+            Resume analytics without surveillance.
+          </span>
         </div>
 
         {/* Only links that lead somewhere real. Nothing placeholder. */}

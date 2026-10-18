@@ -76,7 +76,9 @@ function Panel({
   className?: string;
 }) {
   return (
-    <div className={`rounded-card border border-surface-border bg-surface/60 p-5 ${className ?? ""}`}>
+    <div
+      className={`rounded-card border border-surface-border bg-surface/60 p-5 ${className ?? ""}`}
+    >
       <h2 className="font-mono text-[11px] tracking-[0.18em] text-foreground-muted uppercase">
         {title}
       </h2>

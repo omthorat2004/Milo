@@ -65,7 +65,7 @@ export function OtpForm({ email, resendAfterSeconds, className }: Props) {
           required
           className={cn(
             "mt-2 h-11 w-full rounded-lg border border-surface-border bg-surface px-4 text-base tracking-[0.3em]",
-            "text-foreground placeholder:text-foreground-muted placeholder:tracking-normal",
+            "text-foreground placeholder:tracking-normal placeholder:text-foreground-muted",
             "transition-colors focus:border-signal-400/60 focus:outline-none",
           )}
         />

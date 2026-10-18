@@ -48,7 +48,7 @@ export function HeroResumeCard() {
         </div>
 
         {/* The core product claim, visualised: a view landing on a loop. */}
-        <div className="animate-view-pulse absolute -top-3 -right-3 flex items-center gap-1.5 rounded-full border border-signal-400/30 bg-ink-950 px-3 py-1.5 text-xs font-medium text-sand-50 shadow-lg shadow-signal-400/20">
+        <div className="absolute -top-3 -right-3 flex animate-view-pulse items-center gap-1.5 rounded-full border border-signal-400/30 bg-ink-950 px-3 py-1.5 text-xs font-medium text-sand-50 shadow-lg shadow-signal-400/20">
           <span className="relative flex size-1.5">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-signal-400 opacity-70" />
             <span className="relative inline-flex size-1.5 rounded-full bg-signal-400" />

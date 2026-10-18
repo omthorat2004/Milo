@@ -44,8 +44,7 @@ export function ActivityLog({ events }: { events: LinkEvent[] }) {
               ) : null}
             </p>
             <p className="mt-0.5 truncate text-xs text-foreground-muted">
-              {event.device} · {event.browser} on {event.os} ·{" "}
-              {event.referrerDomain ?? "direct"}
+              {event.device} · {event.browser} on {event.os} · {event.referrerDomain ?? "direct"}
               {event.utmSource ? ` (utm: ${event.utmSource})` : ""}
             </p>
           </div>

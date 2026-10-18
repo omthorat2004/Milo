@@ -25,11 +25,9 @@ export const api = axios.create({
 let refreshing: Promise<unknown> | null = null;
 
 function refreshSession(): Promise<unknown> {
-  refreshing ??= api
-    .post("/auth/refresh", undefined, { ignoreRefresh: true })
-    .finally(() => {
-      refreshing = null;
-    });
+  refreshing ??= api.post("/auth/refresh", undefined, { ignoreRefresh: true }).finally(() => {
+    refreshing = null;
+  });
 
   return refreshing;
 }

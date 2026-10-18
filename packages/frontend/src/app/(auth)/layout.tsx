@@ -50,9 +50,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 />
                 <div>
                   <h3 className="text-sm text-foreground">{point.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-foreground-muted">
-                    {point.body}
-                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-foreground-muted">{point.body}</p>
                 </div>
               </li>
             ))}
@@ -61,7 +59,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <p className="relative text-xs text-foreground-muted">
           Private beta. Building in the open at{" "}
-          <Link href="/path" className="text-foreground-muted transition-colors hover:text-foreground">
+          <Link
+            href="/path"
+            className="text-foreground-muted transition-colors hover:text-foreground"
+          >
             /path
           </Link>
           .

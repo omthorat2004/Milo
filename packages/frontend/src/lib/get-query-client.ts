@@ -17,7 +17,6 @@ function makeQueryClient(): QueryClient {
 
 let browserQueryClient: QueryClient | undefined;
 
-
 const isServer = typeof window === "undefined";
 
 /**
