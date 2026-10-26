@@ -57,10 +57,29 @@ what lets `service/auth.py`'s business logic be unit tested without a running ap
 - `_security.py` — password hashing (argon2-cffi), OTP generation/hashing, JWT `create_token` /
   `decode_token`.
 - `_email.py` — `send_email`, backed by `aiosmtplib`; swaps to console-log delivery outside
-  production via `Settings.email_delivery`.
+  production via `Settings.email_delivery`. Never called directly from `service` — see `_celery.py`.
+- `_celery.py` — `celery_app` and `queue_email()`. Every outbound email goes through a Celery task
+  (`milo.send_email`) instead of blocking the request on SMTP; `service/auth.py` calls
+  `queue_email(...)`, never `send_email(...)` directly. `Settings.celery_task_always_eager` defaults
+  to `true` outside production (the task runs inline, so a fresh checkout needs no Redis or worker
+  process to see a verification email) and is rejected at startup if `true` in production — there,
+  `CELERY_BROKER_URL` must point at a real Redis and `make worker-backend` must be running, or
+  queued emails never get picked up. The task retries up to 3 times (5s delay) on any delivery
+  exception, since a down SMTP server shouldn't lose the email outright.
 - `_rate_limit.py` — the shared `slowapi` `Limiter` instance (`limiter`), keyed off caller IP by
   default; per-route limits are read from `Settings` at call time via a lambda, not hardcoded, so
   they're tunable per environment without a redeploy.
+- `_url_guard.py` — `ensure_public_url()`, the SSRF guard. Rejects any non-`http(s)` scheme and
+  resolves the host via `getaddrinfo`, rejecting it if any resolved address is private, loopback,
+  link-local, multicast, reserved, or unspecified. Called once, in `ResumeService.create`, before a
+  candidate-supplied URL is ever persisted. It does not re-validate a redirect target — fetching
+  follows up to 3 redirects (`_http_client.py`), so a host that resolves safely today but redirects
+  to an internal address later would not be caught. This is a known gap, not an oversight.
+- `_http_client.py` — `fetch_document()`, a thin `httpx` wrapper that streams a GET response,
+  capping the buffered body at `Settings.resume_fetch_max_bytes` and raising a plain `ValueError` if
+  exceeded. It raises `httpx.HTTPStatusError` on a terminal 4xx/5xx and otherwise returns the raw
+  bytes/content-type/status. It does not retry — retrying belongs to `service`, since "which errors
+  are worth retrying" is a business decision, not an HTTP-client concern.
 
 ## `exception`
 
@@ -109,9 +128,68 @@ Register → email-verify (OTP) → login → refresh → logout → `/me`. Full
   otp_record_grace_seconds`), so stale pending verifications are garbage-collected by MongoDB itself
   rather than needing a cleanup job.
 
+## Currently implemented feature: resumes and tracking links
+
+`routes/resume.py` + `routes/tracking_link.py` -> `service/resume.py` + `service/tracking_link.py`
+-> `dao/resume.py` + `dao/tracking_link.py` + `dao/analytics_event.py`. Full endpoint contract is in
+[api-design.md](./api-design.md); collection shapes are in
+[database-schema.md](./database-schema.md).
+
+- **The SSRF guard runs once, at write time, not at fetch time.** `ResumeService.create` calls
+  `core._url_guard.ensure_public_url` before a candidate-supplied `source_url` is ever persisted —
+  rejecting a non-`http(s)` scheme or a host that resolves to a private/loopback/link-local address.
+  It does not re-check on every later fetch, and it does not re-validate a redirect target (see
+  `core` section above) — a deliberate, documented gap, not an oversight.
+- **Expiry and revocation are checked before any network call.** `LinkService.resolve` looks up the
+  link by slug and raises `TrackingLinkExpired`/`TrackingLinkRevoked` immediately if either applies
+  — an expired link never triggers an outbound fetch, a retry, or an analytics event. This is also
+  why the check happens in `service`, not as a Mongo query filter in `dao`: "is this expired" is a
+  business rule (compared against `datetime.now(UTC)` at request time), not a storage concern.
+- **Fetching the resume document retries, with a linear backoff, only on transient failures.**
+  `LinkService._fetch_with_retry` retries `resume_fetch_max_retries` times (default 2) on
+  `httpx.TransportError` or a `5xx`, backing off `resume_fetch_retry_backoff_seconds * attempt`
+  between tries. A `4xx` or a body over `resume_fetch_max_bytes` raises `ResumeFetchFailed`
+  immediately instead of retrying — those outcomes won't change on retry, so retrying would only add
+  latency for the same failure.
+- **The analytics event is recorded, not required.** If writing the `view`/`download` event raises
+  for any reason, `LinkService.resolve` logs a warning and still returns the fetched document — a
+  viewer seeing the resume is the product; losing one analytics row is not worth failing the whole
+  request over.
+- **`GET /l/{slug}` streams the document back through Milo's own server** (not a redirect), so the
+  `Content-Type`/`Content-Disposition` on the response are Milo's to control and the viewer never
+  sees the raw external URL. The tradeoff is that Milo's process buffers the whole body (bounded by
+  `resume_fetch_max_bytes`) before responding.
+
+## Editing a resume or a link
+
+`PATCH /resumes/{id}` (`ResumeService.update`) and `PATCH /links/{id}`
+(`LinkService.update_expiry`) are the only two mutation endpoints beyond create/revoke:
+
+- A resume's `title`/`source_url` are both independently optional in the request; `source_url` is
+  re-validated through the same SSRF guard as creation. `UpdateResumeRequest` rejects an empty
+  request (no `title` and no `source_url`) at the schema layer, before the service is even called.
+- A link's **only** editable field is `expires_at`, via `expires_in_days` (an integer sets it,
+  `null` clears it — the request body always requires this field explicitly, there's no "omit to
+  leave unchanged" case since it's the sole field). `TrackingLinkDAO.update_expiry` filters on
+  `revoked_at: None`, so a revoked link can't be "un-revoked" by editing its expiry back to the
+  future — revoking stays permanent, enforced at the query level, not just by convention in
+  `service`.
+
+## The dwell-time beacon
+
+`POST /l/{slug}/dwell` (`LinkService.record_dwell`) closes the gap `AnalyticsEvent.dwell_time_seconds`
+left open: `packages/frontend`'s public `/l/[slug]` viewer (`components/app/resume-viewer.tsx`) sends
+one via `navigator.sendBeacon` when the tab hides or unloads. It's deliberately lenient — an unknown
+slug silently no-ops, and an expired/revoked link still records the event, because by the time the
+beacon fires the viewer was already reading the resume; there's no response for the client to act on
+regardless. The frontend has no in-browser PDF renderer, so `page_number` is always `1` — this is
+whole-document dwell time, not true per-PDF-page attention; a real pdf.js integration would be
+required for the latter and doesn't exist.
+
 ## What's not implemented yet
 
-No resume, tracking-link, or analytics-event routes/services/DAOs exist. When building those, the
-privacy rules bite hardest in `dao`/`model` for analytics events — there is intentionally no
-visitor-identity field to add there (see root `CLAUDE.md` and
-[business-requirements.md](./business-requirements.md)).
+A dashboard endpoint that aggregates `analytics_events` per resume/link (view counts, referrer
+breakdown, average dwell time) does not exist yet — the collection, its index
+(`idx_event_link_occurred_at`), and the raw per-link/per-owner listing endpoints
+(`GET /links/{id}/events`, `GET /events`) are in place, and the frontend currently computes these
+aggregates client-side from the raw event list rather than the backend pre-computing them.

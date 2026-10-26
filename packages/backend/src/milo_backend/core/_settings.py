@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     )
 
     environment: Environment = Environment.DEVELOPMENT
+    public_base_url: str = "http://localhost:8000"
 
     mongodb_uri: str = "mongodb://127.0.0.1:27017"
     mongodb_db: str = "milo"
@@ -65,12 +66,31 @@ class Settings(BaseSettings):
     email_from_address: EmailStr = "no-reply@milo.app"
     email_from_name: str = "Milo"
 
+    celery_broker_url: str = "redis://127.0.0.1:6379/0"
+    celery_result_backend: str | None = None
+    # Dispatches a task inline instead of through the broker. Convenient so a
+    # fresh checkout doesn't need Redis running just to see a verification
+    # email; a real queue is required in production (see validator below).
+    celery_task_always_eager: bool | None = None
+
     otp_length: int = Field(default=6, ge=4, le=10)
     otp_expire_minutes: int = Field(default=10, ge=1, le=60)
     otp_max_attempts: int = Field(default=5, ge=1, le=20)
     otp_resend_cooldown_seconds: int = Field(default=60, ge=0, le=3_600)
     otp_record_grace_seconds: int = Field(default=300, ge=0, le=3_600)
     otp_hash_secret: SecretStr | None = None
+
+    resume_url_max_length: int = Field(default=2048, ge=16, le=8192)
+    resume_fetch_timeout_seconds: float = Field(default=6.0, ge=1.0, le=30.0)
+    resume_fetch_max_retries: int = Field(default=2, ge=0, le=5)
+    resume_fetch_retry_backoff_seconds: float = Field(default=0.5, ge=0.0, le=10.0)
+    resume_fetch_max_bytes: int = Field(
+        default=25_000_000, ge=1_000_000, le=100_000_000
+    )
+
+    tracking_link_slug_length: int = Field(default=10, ge=6, le=32)
+    tracking_link_default_ttl_days: int | None = None
+    tracking_link_max_ttl_days: int = Field(default=365, ge=1, le=3_650)
 
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:3001"]
@@ -91,6 +111,12 @@ class Settings(BaseSettings):
     rate_limit_verification_status: str = "30/minute"
     rate_limit_refresh: str = "30/minute"
     rate_limit_logout: str = "20/minute"
+    rate_limit_create_resume: str = "20/hour"
+    rate_limit_update_resume: str = "30/hour"
+    rate_limit_create_link: str = "30/hour"
+    rate_limit_update_link: str = "30/hour"
+    rate_limit_resolve_link: str = "120/minute"
+    rate_limit_dwell_beacon: str = "240/minute"
     ip_hash_salt: SecretStr | None = None
 
     @property
@@ -167,6 +193,9 @@ class Settings(BaseSettings):
             self.email_delivery = (
                 EmailDelivery.SMTP if self.is_production else EmailDelivery.CONSOLE
             )
+
+        if self.celery_task_always_eager is None:
+            self.celery_task_always_eager = not self.is_production
 
         if self.ip_hash_salt is None:
             self.ip_hash_salt = SecretStr(secrets.token_urlsafe(32))
@@ -260,6 +289,14 @@ class Settings(BaseSettings):
             if self.smtp_credentials is None:
                 raise ValueError(
                     "SMTP_USERNAME and SMTP_PASSWORD are both required in production."
+                )
+
+            if self.celery_task_always_eager:
+                raise ValueError(
+                    "CELERY_TASK_ALWAYS_EAGER cannot be true in production. Eager mode "
+                    "runs the task inline on the request thread instead of through the "
+                    "broker, so a slow or down SMTP server would block every request "
+                    "that sends an email."
                 )
 
         return self

@@ -8,12 +8,21 @@ import { EmptyState } from "@/components/app/empty-state";
 import { LinkStatusBadge } from "@/components/app/link-status-badge";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
+import { useLinkEventsQuery, useLinkQuery } from "@/hooks/use-link-queries";
 import { computeSummary, formatRelativeTime } from "@/lib/links-analytics";
-import { useLinksStore } from "@/stores/links-store";
+import { linkStatus } from "@/lib/links.api";
 
 export function LinkDashboard({ linkId }: { linkId: string }) {
-  const link = useLinksStore((state) => state.links.find((candidate) => candidate.id === linkId));
-  const events = useLinksStore((state) => state.events.filter((event) => event.linkId === linkId));
+  const linkQuery = useLinkQuery(linkId);
+  const eventsQuery = useLinkEventsQuery(linkId);
+
+  if (linkQuery.isLoading) {
+    return (
+      <p className="mx-auto w-full max-w-5xl px-5 py-8 text-sm text-foreground-muted">Loading…</p>
+    );
+  }
+
+  const link = linkQuery.data;
 
   if (!link) {
     return (
@@ -29,9 +38,10 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
     );
   }
 
+  const events = eventsQuery.data ?? [];
   const summary = computeSummary(events);
   const lastEvent = [...events].sort(
-    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+    (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
   )[0];
 
   const summaryCards = [
@@ -47,13 +57,13 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
   return (
     <div className="mx-auto w-full max-w-5xl">
       <PageHeader
-        eyebrow={`Resume · ${link.label}`}
+        eyebrow={`Resume · ${link.resume_title}`}
         title="Dashboard"
         description="Views, unique viewers and downloads for this link only. Aggregate only: Milo never records who opened it."
         action={
           <div className="flex items-center gap-2">
-            <LinkStatusBadge status={link.status} />
-            <CopyLinkButton value={`milo.link/go/${link.slug}`} />
+            <LinkStatusBadge status={linkStatus(link)} />
+            <CopyLinkButton value={link.share_url} />
           </div>
         }
       />
@@ -75,7 +85,7 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
         </h2>
         {lastEvent ? (
           <p className="mt-4 text-sm text-foreground-muted">
-            Last activity {formatRelativeTime(lastEvent.occurredAt)}. See{" "}
+            Last activity {formatRelativeTime(lastEvent.occurred_at)}. See{" "}
             <Link href={`/${link.id}/logs`} className="text-signal-400 hover:underline">
               the full log
             </Link>{" "}

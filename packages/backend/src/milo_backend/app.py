@@ -10,7 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from milo_backend.core import connect, disconnect, get_settings, limiter
 from milo_backend.dependencies import ensure_indexes
 from milo_backend.exception.handlers import register_exception_handlers
-from milo_backend.routes import auth_router
+from milo_backend.routes import auth_router, resume_router, tracking_link_router
 
 
 @asynccontextmanager
@@ -53,6 +53,8 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(auth_router)
+    app.include_router(resume_router)
+    app.include_router(tracking_link_router)
 
     return app
 

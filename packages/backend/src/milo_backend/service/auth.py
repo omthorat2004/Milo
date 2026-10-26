@@ -14,7 +14,7 @@ from milo_backend.core import (
     generate_otp,
     hash_otp,
     hash_password,
-    send_email,
+    queue_email,
     verification_html,
     verification_text,
     verify_otp,
@@ -249,7 +249,7 @@ class AuthService:
             now=now,
         )
 
-        await send_email(
+        queue_email(
             to=user.email,
             subject=f"{code} is your Milo verification code",
             text_body=verification_text(
@@ -258,7 +258,6 @@ class AuthService:
             html_body=verification_html(
                 name=user.name, code=code, settings=self.settings
             ),
-            settings=self.settings,
         )
 
         logger.info("Verification code issued for user %s", user.id)

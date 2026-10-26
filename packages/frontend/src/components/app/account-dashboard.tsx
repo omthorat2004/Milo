@@ -4,16 +4,19 @@ import Link from "next/link";
 
 import { AnalyticsPanels } from "@/components/app/analytics-panels";
 import { EmptyState } from "@/components/app/empty-state";
+import { useMyEventsQuery, useMyLinksQuery } from "@/hooks/use-link-queries";
 import { computeSummary, formatRelativeTime } from "@/lib/links-analytics";
-import { useLinksStore } from "@/stores/links-store";
 
 export function AccountDashboard() {
-  const links = useLinksStore((state) => state.links);
-  const events = useLinksStore((state) => state.events);
+  const linksQuery = useMyLinksQuery();
+  const eventsQuery = useMyEventsQuery();
+
+  const links = linksQuery.data ?? [];
+  const events = eventsQuery.data ?? [];
 
   const summary = computeSummary(events);
   const recent = [...events]
-    .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
+    .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
     .slice(0, 6);
 
   const summaryCards = [
@@ -26,8 +29,8 @@ export function AccountDashboard() {
     },
   ];
 
-  function linkLabel(linkId: string): string {
-    return links.find((link) => link.id === linkId)?.label ?? "Deleted link";
+  function linkTitle(linkId: string): string {
+    return links.find((link) => link.id === linkId)?.resume_title ?? "Deleted link";
   }
 
   return (
@@ -63,13 +66,13 @@ export function AccountDashboard() {
                   className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm"
                 >
                   <span className="min-w-0 truncate text-foreground">
-                    {event.type === "download" ? "Download" : "View"} ·{" "}
-                    <Link href={`/${event.linkId}/dashboard`} className="hover:text-signal-400">
-                      {linkLabel(event.linkId)}
+                    {event.event_type === "download" ? "Download" : "View"} ·{" "}
+                    <Link href={`/${event.link_id}/dashboard`} className="hover:text-signal-400">
+                      {linkTitle(event.link_id)}
                     </Link>
                   </span>
                   <span className="shrink-0 text-foreground-muted">
-                    {formatRelativeTime(event.occurredAt)}
+                    {formatRelativeTime(event.occurred_at)}
                   </span>
                 </li>
               ))}

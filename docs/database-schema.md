@@ -58,7 +58,65 @@ upserted, not appended, so there is never more than one pending/verified record 
   recreates the index with the new value — this is why the TTL is read from `Settings` at startup
   rather than baked into a migration.
 
-No analytics, collection for resumes, or tracking-link collection exists yet.
+### `resumes`
+
+Backed by `model.Resume` (`dao/resume.py::ResumeDAO`).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `owner_id` | ObjectId | the `users._id` this resume belongs to |
+| `title` | string | |
+| `source_url` | string | the candidate's externally-hosted PDF URL; validated against the SSRF guard (`core._url_guard.ensure_public_url`) before being persisted, never fetched or re-validated at write time |
+| `created_at` | datetime (UTC) | |
+| `updated_at` | datetime (UTC) | |
+
+**Indexes:** non-unique on `owner_id` (`idx_resume_owner`) — a candidate can have many resumes.
+
+### `tracking_links`
+
+Backed by `model.TrackingLink` (`dao/tracking_link.py::TrackingLinkDAO`). One document per shareable
+link; a resume can have several (e.g. one per job application).
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `resume_id` | ObjectId | |
+| `owner_id` | ObjectId | denormalized from the resume, so ownership checks on a link don't need a join |
+| `slug` | string | the public path segment, `/l/{slug}`; URL-safe, generated with `secrets.token_urlsafe` |
+| `created_at` | datetime (UTC) | |
+| `expires_at` | datetime (UTC) \| null | `null` means no expiry; checked in `LinkService.resolve` *before* any document fetch |
+| `revoked_at` | datetime (UTC) \| null | set by `DELETE /links/{id}`; a revoked link fails the same way as an expired one from the viewer's perspective, but with a distinct `code` |
+
+**Indexes:**
+- Unique on `slug` (`uniq_tracking_link_slug`).
+- Non-unique on `resume_id` (`idx_tracking_link_resume`).
+
+### `analytics_events`
+
+Backed by `model.AnalyticsEvent` (`dao/analytics_event.py::AnalyticsEventDAO`). Appended, never
+updated — one document per link open. This is the collection the privacy rule below bites hardest
+on.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `_id` | ObjectId | |
+| `link_id` | ObjectId | |
+| `resume_id` | ObjectId | denormalized from the link, so a dashboard query doesn't need a join to group by resume |
+| `event_type` | `"view" \| "download"` | |
+| `occurred_at` | datetime (UTC) | |
+| `session_id` | string \| null | anonymous, client-supplied; not tied to any account |
+| `device_category`, `browser`, `os` | string \| null | |
+| `referrer_domain` | string \| null | hostname only, parsed server-side from the `Referer` header — the full URL (which can carry query-string identity) is never stored |
+| `utm_source`, `utm_medium`, `utm_campaign` | string \| null | |
+| `page_number` | int \| null | |
+| `dwell_time_seconds` | float \| null | not yet populated by any route — reserved for a future "viewer left the tab open" beacon |
+
+**Indexes:** compound on `(link_id, occurred_at desc)` (`idx_event_link_occurred_at`), for the
+eventual per-link dashboard query.
+
+**No IP, geo, or visitor-identity field exists on this model and none may be added** — this is the
+collection root `CLAUDE.md` calls out by name as the one with "no visitor-identity column to add."
 
 ## Landing collections (`packages/landing`)
 

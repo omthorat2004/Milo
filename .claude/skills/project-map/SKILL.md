@@ -77,12 +77,25 @@ how to maintain these and the rest of `packages/landing`'s metadata/discoverabil
 
 ## Everything else (non-auth)
 
-Tracking links now have a frontend CRUD surface (`(app)/(all)/dashboard|links|logs` and the
-`[id]`-scoped equivalents, plus `(all)/links/new`), but it runs entirely against an in-memory mock
-store (`stores/links-store.ts`, `lib/links-analytics.ts`) — there is still no backend `Link` model,
-DAO, service, or route, and no Mongo collection for it. Don't assume a `*.api.ts` or `dao/` module
-exists for links; check `docs/business-requirements.md`'s "Current state" table before building
-against it.
+Resumes and tracking links are implemented end-to-end, frontend and backend. Backend:
+`routes/resume.py` + `routes/tracking_link.py` -> `service/resume.py` + `service/tracking_link.py`
+(the `LinkOverview` DTO denormalizes resume title/URL onto a link listing) -> `dao/resume.py` +
+`dao/tracking_link.py` + `dao/analytics_event.py` -> MongoDB (`resumes`, `tracking_links`,
+`analytics_events` collections). `core/_url_guard.py` (SSRF guard) and `core/_http_client.py`
+(bounded streaming fetch) back the resume-URL validation and `GET /l/{slug}` resolution — see
+[backend-architecture.md](../../../docs/backend-architecture.md). Frontend: `lib/resumes.api.ts` +
+`lib/links.api.ts` (typed wrappers, mirroring `lib/auth.api.ts`'s pattern), `hooks/use-resume-queries.ts`
++ `hooks/use-link-queries.ts` + `hooks/use-link-mutations.ts` + `hooks/use-resume-mutations.ts`
+(TanStack Query, mirroring `hooks/use-auth-mutations.ts`), consumed by `(app)/(all)/dashboard|links|logs`
+and the `[id]`-scoped equivalents plus `(all)/links/new`. The old in-memory mock
+(`stores/links-store.ts`) is gone — don't look for it. Editing exists (`PATCH /resumes/{id}`,
+`PATCH /links/{id}` for expiry only — wired in `components/app/link-settings.tsx`), and the
+dwell-time beacon is live end-to-end: `app/l/[slug]/page.tsx` + `components/app/resume-viewer.tsx`
+is the public, unauthenticated page a tracking link actually resolves to, sending
+`POST /l/{slug}/dwell` via `navigator.sendBeacon` on tab-hide/unload. Not yet built: a
+dashboard/aggregation route beyond the raw `GET /events`/`GET /links/{id}/events` listing (the
+frontend computes aggregates client-side from the raw list today), and true per-PDF-page dwell
+tracking (no pdf.js — `page_number` is always `1`, this is whole-document dwell time).
 
 `packages/ui/src/shipping-log/` is the public "build in the open" changelog data (`/path` on both
 `landing` and `frontend`) — see the `shipping-log-writer` subagent for how/when to update it.

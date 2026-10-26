@@ -78,9 +78,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/omthorat/Milo && { make lint && make typecheck && make test; }; code=$?; if [ $code -eq 0 ]; then echo \"{\\\"systemMessage\\\": \\\"lint, typecheck, and test all passed\\\"}\"; else echo \"{\\\"systemMessage\\\": \\\"lint/typecheck/test failed (exit $code) - run make lint, make typecheck, make test to see details\\\"}\"; fi",
-            "timeout": 180,
-            "statusMessage": "Running lint, typecheck, and test..."
+            "command": "cd /Users/omthorat/Milo && { make fmt-check && make lint && make typecheck && make build && make test; }; code=$?; if [ $code -eq 0 ]; then echo \"{\\\"systemMessage\\\": \\\"CI pipeline passed: fmt-check, lint, typecheck, build, test (all packages)\\\"}\"; else echo \"{\\\"systemMessage\\\": \\\"CI pipeline FAILED (exit $code) - run make fmt-check / make lint / make typecheck / make build / make test to see which stage and folder failed\\\"}\"; fi",
+            "timeout": 300,
+            "statusMessage": "Running full CI pipeline (fmt-check, lint, typecheck, build, test)..."
           }
         ]
       }

@@ -2,9 +2,9 @@
 
 import { EmptyState } from "@/components/app/empty-state";
 import { pageEngagement, trafficSources } from "@/lib/links-analytics";
-import type { LinkEvent } from "@/stores/links-store";
+import type { AnalyticsEvent } from "@/lib/links.api";
 
-export function AnalyticsPanels({ events }: { events: LinkEvent[] }) {
+export function AnalyticsPanels({ events }: { events: AnalyticsEvent[] }) {
   const sources = trafficSources(events);
   const pages = pageEngagement(events);
 

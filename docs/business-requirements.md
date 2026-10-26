@@ -46,24 +46,27 @@ writing:
 | Area | State |
 | --- | --- |
 | `packages/landing` | Complete, deployed. Marketing site + waitlist signup (`POST /api/waitlist`), MongoDB-backed. |
-| `packages/backend` | Auth vertical slice is implemented end-to-end: register, email verification (OTP), login, refresh, logout, `/me`. See [backend-architecture.md](./backend-architecture.md). No resume, tracking-link, or analytics-event features exist yet. |
-| `packages/frontend` | App Router shell exists for marketing/auth/app route groups, including a `[id]` workspace-scoped segment. Auth is fully live end-to-end: the API client (`lib/auth.api.ts`, `lib/axios.config.ts`), client-side session state/route guards (Zustand store + TanStack Query + `PrivateProvider`/`GuestOnlyProvider`), and the register/login/OTP-verify flow (`AuthForm` → `/verify?email=...` → `OtpForm`) all work through the real UI — see [frontend-architecture.md](./frontend-architecture.md). |
+| `packages/backend` | Auth vertical slice (register, email verification (OTP), login, refresh, logout, `/me`) plus resumes, shareable tracking links, link resolution (fetch-with-retry, expiry/revocation checks, anonymous view/download events), editing (`PATCH /resumes/{id}`, `PATCH /links/{id}` for expiry), and a dwell-time beacon (`POST /l/{slug}/dwell`) are implemented end-to-end. 31 service-layer unit tests exist (`packages/backend/tests/`). See [backend-architecture.md](./backend-architecture.md) and [testing.md](./testing.md). No dashboard/aggregation endpoint reads the analytics events yet — the frontend computes aggregates client-side from the raw event list. |
+| `packages/frontend` | App Router shell exists for marketing/auth/app route groups, including a `[id]` (tracking-link-scoped) segment. Auth is fully live end-to-end: the API client (`lib/auth.api.ts`, `lib/axios.config.ts`), client-side session state/route guards (Zustand store + TanStack Query + `PrivateProvider`/`GuestOnlyProvider`), and the register/login/OTP-verify flow (`AuthForm` → `/verify?email=...` → `OtpForm`) all work through the real UI. Resumes and tracking links are also live end-to-end against the real backend (`lib/resumes.api.ts`, `lib/links.api.ts`, TanStack Query hooks in `hooks/use-resume-*`/`hooks/use-link-*`) — the earlier in-memory mock store is gone. See [frontend-architecture.md](./frontend-architecture.md). |
 
 ## Near-term product surface (not yet built)
 
-Inferred from the repository layout and README, not yet implemented — treat as directional, confirm
-with the user before building:
+- **A backend-computed dashboard/aggregation endpoint**: `(app)/[id]/dashboard`, `/links`, `/logs`
+  are live, but they call `GET /events` / `GET /links/{id}/events` for the raw event list and
+  compute summary numbers, traffic sources, and page engagement client-side
+  (`lib/links-analytics.ts`). The backend collection and index this would eventually query already
+  exist (`analytics_events`/`idx_event_link_occurred_at`, see
+  [database-schema.md](./database-schema.md)) — only a server-side aggregation query and route are
+  missing, which matters once the event volume for a popular link outgrows "fetch everything and
+  reduce in the browser."
+- **True per-PDF-page dwell tracking**: the dwell-time beacon exists (`POST /l/{slug}/dwell`, fed by
+  `components/app/resume-viewer.tsx` via `navigator.sendBeacon`), but the frontend has no
+  in-browser PDF renderer (no pdf.js) — it's whole-document dwell time, `page_number` always `1`,
+  not real per-page attention.
 
-- **Resumes**: a candidate registers a resume by URL (the PDF stays hosted externally; Milo never
-  stores the file itself — consistent with "resume stays where it already lives").
-- **Tracking links**: a generated Milo link per resume that proxies/redirects to the external URL
-  while recording an analytics event.
-- **Analytics events**: view/download events scoped to a tracking link, restricted to the allowed
-  signal list above. The `(app)/[id]/dashboard`, `/links`, `/logs` routes in the frontend scaffold
-  are the planned surface for this (dashboard = aggregate view, links = manage tracking links, logs
-  = raw event history).
-- **Dashboard**: aggregated analytics per resume/link (view counts, referrer breakdown, dwell time),
-  privacy rules applied at the query layer in `service`, not bolted on in the UI.
+Resumes, tracking links, and link resolution (including fetch-with-retry and expiry/revocation
+checks) are now built — see the `packages/backend` row above and
+[backend-architecture.md](./backend-architecture.md).
 
 ## Licensing
 

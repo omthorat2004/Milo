@@ -15,7 +15,7 @@ export default function NewLinkPage() {
       />
 
       <div className="mt-10 max-w-lg">
-        <LinkForm mode="create" />
+        <LinkForm />
       </div>
     </div>
   );

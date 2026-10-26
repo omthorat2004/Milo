@@ -4,11 +4,19 @@ import { ActivityLog } from "@/components/app/activity-log";
 import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
-import { useLinksStore } from "@/stores/links-store";
+import { useLinkEventsQuery, useLinkQuery } from "@/hooks/use-link-queries";
 
 export function LinkLogs({ linkId }: { linkId: string }) {
-  const link = useLinksStore((state) => state.links.find((candidate) => candidate.id === linkId));
-  const events = useLinksStore((state) => state.events.filter((event) => event.linkId === linkId));
+  const linkQuery = useLinkQuery(linkId);
+  const eventsQuery = useLinkEventsQuery(linkId);
+
+  if (linkQuery.isLoading) {
+    return (
+      <p className="mx-auto w-full max-w-5xl px-5 py-8 text-sm text-foreground-muted">Loading…</p>
+    );
+  }
+
+  const link = linkQuery.data;
 
   if (!link) {
     return (
@@ -27,12 +35,12 @@ export function LinkLogs({ linkId }: { linkId: string }) {
   return (
     <div className="mx-auto w-full max-w-5xl">
       <PageHeader
-        eyebrow={`Resume · ${link.label}`}
+        eyebrow={`Resume · ${link.resume_title}`}
         title="Logs"
         description="The raw events behind this link's dashboard, newest first."
       />
 
-      <ActivityLog events={events} />
+      <ActivityLog events={eventsQuery.data ?? []} />
     </div>
   );
 }

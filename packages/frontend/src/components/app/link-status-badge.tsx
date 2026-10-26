@@ -1,14 +1,16 @@
 import { cn } from "@/lib/utils";
-import type { LinkStatus } from "@/stores/links-store";
+import type { LinkStatus } from "@/lib/links.api";
 
 const labels: Record<LinkStatus, string> = {
   active: "Active",
-  paused: "Paused",
+  expired: "Expired",
+  revoked: "Revoked",
 };
 
 const styles: Record<LinkStatus, string> = {
   active: "bg-signal-400/10 text-signal-400",
-  paused: "bg-surface text-foreground-muted",
+  expired: "bg-surface text-foreground-muted",
+  revoked: "bg-clay-400/10 text-clay-400",
 };
 
 export function LinkStatusBadge({ status, className }: { status: LinkStatus; className?: string }) {

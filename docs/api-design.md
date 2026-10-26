@@ -6,7 +6,8 @@ Two distinct API surfaces exist today. There is no unified API gateway — `pack
 | Surface | Lives in | Purpose |
 | --- | --- | --- |
 | `POST /api/waitlist`, `GET /api/waitlist` | `packages/landing` (Next.js route handler) | Pre-launch waitlist signups. The *only* route handler this package should ever have — root `CLAUDE.md` is explicit that product logic belongs in FastAPI, not Next API routes. |
-| `/auth/*` | `packages/backend` (FastAPI, mounted with no version prefix yet) | Product auth. Everything else the product app will need (resumes, tracking links, analytics) will be added here following the same conventions. |
+| `/auth/*` | `packages/backend` (FastAPI, mounted with no version prefix yet) | Product auth. |
+| `/resumes`, `/resumes/{id}/links`, `/links/{id}`, `/l/{slug}` | `packages/backend` | Resumes, shareable tracking links, and public link resolution. |
 
 ## Conventions for every backend endpoint
 
@@ -58,6 +59,49 @@ All request/response fields are defined in `schemas/auth.py`; this table is the 
 `AuthResponse` is always `{"user": {id, name, email, email_verified}}` — the password hash and any
 internal fields never leave `model.User`.
 
+## `/resumes` and tracking-link endpoint reference
+
+All request/response fields are defined in `schemas/resume.py` and `schemas/tracking_link.py`.
+
+| Method & path | Auth required | Request | Success | Notable errors |
+| --- | --- | --- | --- | --- |
+| `POST /resumes` | yes (cookie) | `{title, source_url}` | 201 `ResumeResponse` | `invalid_resume_url` (fails the SSRF guard, or exceeds `resume_url_max_length`) |
+| `GET /resumes` | yes | — | 200 `list[ResumeResponse]` | — |
+| `GET /resumes/{resume_id}` | yes | — | 200 `ResumeResponse` | `resume_not_found` |
+| `PATCH /resumes/{resume_id}` | yes | `{title?, source_url?}`, at least one required | 200 `ResumeResponse` | `resume_not_found`, `invalid_resume_url` (if `source_url` is given and fails the SSRF guard) |
+| `POST /resumes/{resume_id}/links` | yes | `{expires_in_days?}` | 201 `TrackingLinkResponse` | `resume_not_found` (not yours or doesn't exist) |
+| `GET /resumes/{resume_id}/links` | yes | — | 200 `list[TrackingLinkResponse]` | `resume_not_found` |
+| `GET /links` | yes | — | 200 `list[TrackingLinkResponse]`, every link across every resume you own | — |
+| `GET /links/{link_id}` | yes | — | 200 `TrackingLinkResponse` | `tracking_link_not_found` |
+| `PATCH /links/{link_id}` | yes | `{expires_in_days}` (required; `null` clears expiry) | 200 `TrackingLinkResponse` | `tracking_link_not_found` (also raised for an already-revoked link — revoking is permanent, so there's nothing left to edit) |
+| `GET /links/{link_id}/events` | yes | — | 200 `list[AnalyticsEventResponse]`, newest first | `tracking_link_not_found` |
+| `GET /events` | yes | — | 200 `list[AnalyticsEventResponse]`, across every link you own, newest first | — |
+| `DELETE /links/{link_id}` | yes | — | 204 | — (silently no-ops if the link isn't yours, same as revoking something already gone) |
+| `GET /l/{slug}` | no | query: `sid`, `device_category`, `browser`, `os`, `utm_source`, `utm_medium`, `utm_campaign`, `page_number`, `download` | 200, streams the resume document with the original `Content-Type` | `tracking_link_not_found`, `tracking_link_expired` (checked *before* any fetch, so an expired link never triggers a network call or a retry), `tracking_link_revoked`, `resume_fetch_failed` (after exhausting `resume_fetch_max_retries` retries on a transient failure, or immediately on a non-retryable 4xx/oversized body) |
+| `POST /l/{slug}/dwell` | no | `{session_id?, page_number?, dwell_seconds}` | 204, always, even for an unknown/expired/revoked slug | — (best-effort; fed by `navigator.sendBeacon`, which never reads the response) |
+
+`GET /l/{slug}` is the public share link: opening it validates expiry/revocation first, then fetches
+the candidate's externally-hosted document (with retry on transient 5xx/transport errors — see
+"Resume fetching and retries" below) and records one anonymous `view` (or `download`, with
+`?download=true`) analytics event before streaming the bytes back. The `referrer_domain` signal is
+read server-side from the `Referer` header (hostname only), not trusted from a query param.
+
+`POST /l/{slug}/dwell` is the dwell-time beacon: `packages/frontend`'s public `/l/[slug]` viewer page
+(`components/app/resume-viewer.tsx`) calls it via `navigator.sendBeacon` when the tab is hidden or
+unloaded, reporting how long the page was open. There is no in-browser PDF renderer in the frontend
+(no pdf.js), so `page_number` is always `1` today — this records whole-document dwell time, not true
+per-PDF-page attention. A link that's since expired or been revoked still records a `view` event for
+this (the viewer was already reading it when the beacon fires; this is treated as a benign race, not
+an error) rather than raising — there is no response for the client to act on anyway.
+
+### Resume fetching and retries
+
+`LinkService._fetch_with_retry` (`service/tracking_link.py`) retries `resume_fetch_max_retries`
+times (default 2, so 3 attempts total) with a linear backoff (`resume_fetch_retry_backoff_seconds *
+attempt`) on `httpx.TransportError` or a `5xx` response. A non-retryable `4xx` or an oversized body
+(> `resume_fetch_max_bytes`) raises `resume_fetch_failed` immediately — retrying a 404 or a
+too-large file wastes three timeouts' worth of latency for the same wrong answer.
+
 ## Rate limiting
 
 Backed by `slowapi` (`core/_rate_limit.py`), wired in two layers:
@@ -79,6 +123,12 @@ Backed by `slowapi` (`core/_rate_limit.py`), wired in two layers:
 | `POST /auth/refresh` | `rate_limit_refresh` | `30/minute` | Not credential-guessable (requires a valid refresh cookie already), but still capped so a compromised/buggy client can't hammer token rotation. |
 | `POST /auth/logout` | `rate_limit_logout` | `20/minute` | Low-risk, but still capped rather than left purely on the app-wide default — consistent with "every mutating route decides its limit on purpose" rather than by omission. |
 | `GET /auth/me` | — (app-wide default only) | `200/minute` | Deliberately not given a tighter override: it's read-only, called on every app mount/tab, and the one route where an aggressive limit would most likely lock out a legitimate visitor rather than an attacker. |
+| `POST /resumes` | `rate_limit_create_resume` | `20/hour` | Each create triggers an SSRF-guard DNS resolution; caps abuse of that as a probing oracle. |
+| `PATCH /resumes/{id}` | `rate_limit_update_resume` | `30/hour` | Same SSRF-guard concern as create, when `source_url` changes. |
+| `POST /resumes/{id}/links` | `rate_limit_create_link` | `30/hour` | Caps mass link generation. |
+| `PATCH /links/{id}` | `rate_limit_update_link` | `30/hour` | Low-risk, but still capped rather than left on the app-wide default only. |
+| `GET /l/{slug}` | `rate_limit_resolve_link` | `120/minute` | Each open triggers an outbound fetch (with retries) to the resume's external host; looser than the create routes since this is the one a real recruiter/viewer hits, but still capped so a slug can't be used to hammer an arbitrary external origin through Milo's server. |
+| `POST /l/{slug}/dwell` | `rate_limit_dwell_beacon` | `240/minute` | Looser than `resolve_link` since it triggers no outbound fetch, just a Mongo insert, but still capped — a beacon endpoint with no auth is otherwise a free-form write oracle. |
 
 All limits live in `Settings` (`core/_settings.py`), never as a literal string in a decorator, so
 they're configurable per environment without a code change — see the checklist below.

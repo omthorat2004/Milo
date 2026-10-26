@@ -1,10 +1,10 @@
 "use client";
 
 import { ActivityLog } from "@/components/app/activity-log";
-import { useLinksStore } from "@/stores/links-store";
+import { useMyEventsQuery } from "@/hooks/use-link-queries";
 
 export function AccountLogs() {
-  const events = useLinksStore((state) => state.events);
+  const eventsQuery = useMyEventsQuery();
 
-  return <ActivityLog events={events} />;
+  return <ActivityLog events={eventsQuery.data ?? []} />;
 }

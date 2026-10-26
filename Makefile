@@ -14,7 +14,7 @@ LANDING  := packages/landing
 
 .DEFAULT_GOAL := help
 .PHONY: help install install-js install-py dev dev-landing dev-frontend dev-backend \
-        build lint lint-js lint-py fmt fmt-js fmt-py fmt-check typecheck test test-py clean
+        worker-backend build lint lint-js lint-py fmt fmt-js fmt-py fmt-check typecheck test test-js test-py clean
 
 help: ## Show available targets
 	@echo "Milo, make <target>"; echo
@@ -46,6 +46,9 @@ dev-frontend: ## Run the product app on :3001
 dev-backend: ## Run the FastAPI backend on :8000
 	cd $(BACKEND) && poetry run uvicorn milo_backend.app:app --reload --port 8000
 
+worker-backend: ## Run the Celery worker (email delivery). Needs Redis; CELERY_TASK_ALWAYS_EAGER=true skips this in dev.
+	cd $(BACKEND) && poetry run celery -A milo_backend.core._celery.celery_app worker --loglevel=info
+
 ## ------------------------------------------------------------------ check
 
 build: ## Production build of all JavaScript packages
@@ -67,7 +70,10 @@ typecheck: ## TypeScript and mypy
 		cd $(BACKEND) && poetry run mypy src; \
 	else echo "skip: $(BACKEND) not set up"; fi
 
-test: test-py ## Run all test suites
+test: test-js test-py ## Run all test suites
+
+test-js: ## Vitest across JavaScript workspaces that have a test script
+	npm run test --workspaces --if-present
 
 test-py: ## pytest on the backend
 	@if [ -f "$(BACKEND)/pyproject.toml" ]; then \

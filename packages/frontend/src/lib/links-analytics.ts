@@ -1,4 +1,4 @@
-import type { LinkEvent } from "@/stores/links-store";
+import type { AnalyticsEvent } from "@/lib/links.api";
 
 export type Summary = {
   views: number;
@@ -7,10 +7,12 @@ export type Summary = {
   downloadRate: number | null;
 };
 
-export function computeSummary(events: LinkEvent[]): Summary {
-  const views = events.filter((event) => event.type === "view");
-  const downloads = events.filter((event) => event.type === "download");
-  const uniqueViewers = new Set(views.map((event) => event.sessionId)).size;
+export function computeSummary(events: AnalyticsEvent[]): Summary {
+  const views = events.filter((event) => event.event_type === "view");
+  const downloads = events.filter((event) => event.event_type === "download");
+  const uniqueViewers = new Set(
+    views.map((event) => event.session_id).filter((id): id is string => id !== null),
+  ).size;
 
   return {
     views: views.length,
@@ -22,11 +24,11 @@ export function computeSummary(events: LinkEvent[]): Summary {
 
 export type TrafficSource = { domain: string; count: number };
 
-export function trafficSources(events: LinkEvent[], limit = 5): TrafficSource[] {
+export function trafficSources(events: AnalyticsEvent[], limit = 5): TrafficSource[] {
   const counts = new Map<string, number>();
 
   for (const event of events) {
-    const domain = event.referrerDomain ?? "Direct";
+    const domain = event.referrer_domain ?? "Direct";
     counts.set(domain, (counts.get(domain) ?? 0) + 1);
   }
 
@@ -38,18 +40,18 @@ export function trafficSources(events: LinkEvent[], limit = 5): TrafficSource[] 
 
 export type PageEngagement = { page: number; views: number; avgDwellSeconds: number };
 
-export function pageEngagement(events: LinkEvent[]): PageEngagement[] {
+export function pageEngagement(events: AnalyticsEvent[]): PageEngagement[] {
   const byPage = new Map<number, { views: number; dwellTotal: number; dwellCount: number }>();
 
   for (const event of events) {
-    if (event.type !== "view") continue;
-    const entry = byPage.get(event.page) ?? { views: 0, dwellTotal: 0, dwellCount: 0 };
+    if (event.event_type !== "view" || event.page_number === null) continue;
+    const entry = byPage.get(event.page_number) ?? { views: 0, dwellTotal: 0, dwellCount: 0 };
     entry.views += 1;
-    if (event.dwellSeconds !== null) {
-      entry.dwellTotal += event.dwellSeconds;
+    if (event.dwell_time_seconds !== null) {
+      entry.dwellTotal += event.dwell_time_seconds;
       entry.dwellCount += 1;
     }
-    byPage.set(event.page, entry);
+    byPage.set(event.page_number, entry);
   }
 
   return Array.from(byPage.entries())
@@ -63,7 +65,7 @@ export function pageEngagement(events: LinkEvent[]): PageEngagement[] {
 
 export function formatDwell(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
-  const rest = seconds % 60;
+  const rest = Math.round(seconds % 60);
   return minutes > 0 ? `${minutes}m ${rest}s` : `${rest}s`;
 }
 
@@ -79,13 +81,4 @@ export function formatRelativeTime(iso: string): string {
 
   const days = Math.round(hours / 24);
   return `${days}d ago`;
-}
-
-export function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
 }
