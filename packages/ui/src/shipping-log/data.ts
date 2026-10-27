@@ -10,6 +10,14 @@ export type ShipEntry = {
 
 export const shippingLog: readonly ShipEntry[] = [
   {
+    date: "2026-10-27",
+    title: "Dashboards gain device, browser, trend, and top-link panels",
+    description:
+      'Three panels on top of data the backend already recorded but no page ever showed. Device/browser/OS breakdowns reuse a new shared bar-list component (the same one traffic sources already used, now de-duplicated into one place), since those three fields have been on every analytics event since the first version of this feature and had zero UI consumers until now. A 14-day daily views chart is the first time-based view anywhere in the product; every other panel before this only ever showed one running total. The account dashboard also gets a top-links ranking, sorting every link an owner has by view count, which is the actual answer to "which application is getting looked at" instead of one combined number across all of them. All three are frontend-only reads against the existing /events and /links APIs, no schema change, no new signal beyond what root CLAUDE.md already allows. 9 new Vitest tests.',
+    tags: ["Frontend", "Analytics"],
+    status: "shipped",
+  },
+  {
     date: "2026-10-26",
     title: "Tracking links get a real backend, end to end",
     description:
