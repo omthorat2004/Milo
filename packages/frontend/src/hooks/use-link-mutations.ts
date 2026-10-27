@@ -37,7 +37,7 @@ export function useCreateTrackingLinkMutation(): UseMutationResult<
   });
 }
 
-/** Revoking is permanent — there is no un-revoke endpoint. */
+/** Revoking is permanent, there is no un-revoke endpoint. */
 export function useRevokeLinkMutation(): UseMutationResult<void, unknown, string> {
   const queryClient = useQueryClient();
 
@@ -49,7 +49,7 @@ export function useRevokeLinkMutation(): UseMutationResult<void, unknown, string
   });
 }
 
-/** The only editable field on a link — expiry. `null` clears it (never expires). */
+/** The only editable field on a link: expiry. `null` clears it (never expires). */
 export function useUpdateLinkExpiryMutation(): UseMutationResult<
   TrackingLink,
   unknown,

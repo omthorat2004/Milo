@@ -11,7 +11,7 @@ export const sessionQueryKey = ["auth", "session"] as const;
 
 /**
  * Fetches the current session via TanStack Query and mirrors the result into
- * authStore, which is what PrivateProvider/GuestOnlyProvider read — they
+ * authStore, which is what PrivateProvider/GuestOnlyProvider read. They
  * need a synchronous isAuthenticated/isLoading flag, not a query object.
  * `retry: false` because a 401 here already survived the axios interceptor's
  * own refresh-and-retry (see lib/axios.config.ts); a second layer of retries

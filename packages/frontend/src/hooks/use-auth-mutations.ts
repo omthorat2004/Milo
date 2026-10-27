@@ -25,7 +25,7 @@ function useAdoptSession() {
 
   return (user: AuthUser) => {
     setUser(user);
-    // Seeds useAuthSession's query cache so it doesn't immediately re-fetch /auth/me — we
+    // Seeds useAuthSession's query cache so it doesn't immediately re-fetch /auth/me. We
     // already have the user from this response.
     queryClient.setQueryData(sessionQueryKey, user);
   };
@@ -33,7 +33,7 @@ function useAdoptSession() {
 
 /**
  * On success, writes straight to auth-store so PrivateProvider/GuestOnlyProvider see the new
- * session immediately — GuestOnlyProvider's own effect is what navigates away from /login, this
+ * session immediately. GuestOnlyProvider's own effect is what navigates away from /login, this
  * hook doesn't redirect itself.
  */
 export function useLoginMutation(): UseMutationResult<AuthUser, unknown, LoginInput> {
@@ -47,7 +47,7 @@ export function useLoginMutation(): UseMutationResult<AuthUser, unknown, LoginIn
 
 /**
  * Registering doesn't establish a session (the backend requires OTP verification first), so this
- * doesn't touch auth-store — it just hands the caller the VerificationPending response, which is
+ * doesn't touch auth-store. It just hands the caller the VerificationPending response, which is
  * what the OTP step needs (email, resend cooldown).
  */
 export function useRegisterMutation(): UseMutationResult<
@@ -60,7 +60,7 @@ export function useRegisterMutation(): UseMutationResult<
   });
 }
 
-/** Submits the OTP code. Same session-adoption as login — this is what completes registration. */
+/** Submits the OTP code. Same session-adoption as login, this is what completes registration. */
 export function useVerifyOtpMutation(): UseMutationResult<AuthUser, unknown, VerifyOtpInput> {
   const adoptSession = useAdoptSession();
 
@@ -70,7 +70,7 @@ export function useVerifyOtpMutation(): UseMutationResult<AuthUser, unknown, Ver
   });
 }
 
-/** Resends the OTP code. No session change — just a fresh VerificationPending for the cooldown. */
+/** Resends the OTP code. No session change, just a fresh VerificationPending for the cooldown. */
 export function useResendOtpMutation(): UseMutationResult<
   VerificationPending,
   unknown,
@@ -87,8 +87,8 @@ export type VerificationChallenge =
 
 /**
  * The single source of truth the /verify page (and login's email_not_verified handler) resolves
- * against. Always checks /auth/verify-email/status first — cheap, side-effect-free, and what gives
- * the OTP step its live cooldown on every page load/refresh — and only calls startVerification
+ * against. Always checks /auth/verify-email/status first (cheap, side-effect-free, and what gives
+ * the OTP step its live cooldown on every page load/refresh), and only calls startVerification
  * (which sends another email) when there's genuinely no pending code yet. An already-verified
  * email is reported as such rather than falling through into startVerification, which would
  * otherwise hit EmailAlreadyVerified.

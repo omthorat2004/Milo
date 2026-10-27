@@ -28,7 +28,7 @@ export function AuthForm({ mode, className }: Props) {
   const mutation = mode === "register" ? registerMutation : loginMutation;
 
   function goToVerify(email: string) {
-    // /verify re-resolves status live (see verify-status.tsx) — it's always safe to land here,
+    // /verify re-resolves status live (see verify-status.tsx). It's always safe to land here,
     // whether a code was just sent or one was already pending.
     router.push(`/verify?email=${encodeURIComponent(email)}`);
   }
@@ -45,7 +45,7 @@ export function AuthForm({ mode, className }: Props) {
         {
           onSuccess: () => goToVerify(email),
           onError: (error) => {
-            // A code is already pending for this email (e.g. a previous register attempt) —
+            // A code is already pending for this email (e.g. a previous register attempt),
             // /verify will find it via status rather than this being a dead end.
             const alreadyPending =
               isAxiosError<{ code?: string }>(error) &&
@@ -61,7 +61,7 @@ export function AuthForm({ mode, className }: Props) {
       { email, password },
       {
         onError: (error) => {
-          // Right credentials, unverified account — send them to finish verification instead of
+          // Right credentials, unverified account, send them to finish verification instead of
           // a dead-end error.
           const needsVerification =
             isAxiosError<{ code?: string }>(error) &&

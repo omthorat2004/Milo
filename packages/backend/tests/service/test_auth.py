@@ -55,7 +55,7 @@ async def test_register_twice_unverified_hits_resend_cooldown_not_conflict(
     service: AuthService,
 ) -> None:
     """Registering again with a pending-but-unverified email is a resend
-    attempt, not `user_already_exists` — see backend-architecture.md."""
+    attempt, not `user_already_exists`, see backend-architecture.md."""
     await service.register(name="Ada", email="ada@example.com", password="supersecret")
 
     with pytest.raises(ResendTooSoon):

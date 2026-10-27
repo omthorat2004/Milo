@@ -13,7 +13,7 @@ function readTheme(): Theme {
 
 /**
  * Reads/writes the theme already applied by theme-script.ts. The initial
- * state is always "dark" — matching the hardcoded SSR markup on <html> —
+ * state is always "dark", matching the hardcoded SSR markup on <html>,
  * even though theme-script.ts may have already corrected the live DOM
  * before hydration runs. Starting from readTheme() here would make this
  * component's first client render disagree with the server-rendered HTML

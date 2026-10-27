@@ -1,11 +1,11 @@
 # API design
 
-Two distinct API surfaces exist today. There is no unified API gateway — `packages/landing` and
+Two distinct API surfaces exist today. There is no unified API gateway, `packages/landing` and
 `packages/backend` are deployed and versioned independently.
 
 | Surface | Lives in | Purpose |
 | --- | --- | --- |
-| `POST /api/waitlist`, `GET /api/waitlist` | `packages/landing` (Next.js route handler) | Pre-launch waitlist signups. The *only* route handler this package should ever have — root `CLAUDE.md` is explicit that product logic belongs in FastAPI, not Next API routes. |
+| `POST /api/waitlist`, `GET /api/waitlist` | `packages/landing` (Next.js route handler) | Pre-launch waitlist signups. The *only* route handler this package should ever have, root `CLAUDE.md` is explicit that product logic belongs in FastAPI, not Next API routes. |
 | `/auth/*` | `packages/backend` (FastAPI, mounted with no version prefix yet) | Product auth. |
 | `/resumes`, `/resumes/{id}/links`, `/links/{id}`, `/l/{slug}` | `packages/backend` | Resumes, shareable tracking links, and public link resolution. |
 
@@ -14,32 +14,32 @@ Two distinct API surfaces exist today. There is no unified API gateway — `pack
 - **Request/response shapes are Pydantic models in `schemas/`, never a route-local dict.** Add a
   new schema class before writing the route body.
 - **Business-rule failures raise a typed `AppException` subclass** (`exception/<area>.py`), not an
-  `HTTPException`. The route layer doesn't know HTTP status codes for domain errors — the exception
+  `HTTPException`. The route layer doesn't know HTTP status codes for domain errors, the exception
   class does (`status_code` class attribute). See [backend-architecture.md](./backend-architecture.md).
-- **Every mutating/sensitive route is rate-limited** via `@limiter.limit(lambda: get_settings().rate_limit_<name>)` — a lambda, not a literal string, so the limit is configurable per environment without a code change. The one deliberate exception is `GET /auth/me` (read-heavy, no mutation, called on every app load — see "Rate limiting" below). Every route, including that one, still falls under the app-wide default via `SlowAPIMiddleware`.
+- **Every mutating/sensitive route is rate-limited** via `@limiter.limit(lambda: get_settings().rate_limit_<name>)`, a lambda, not a literal string, so the limit is configurable per environment without a code change. The one deliberate exception is `GET /auth/me` (read-heavy, no mutation, called on every app load, see "Rate limiting" below). Every route, including that one, still falls under the app-wide default via `SlowAPIMiddleware`.
 - **Auth is cookie-based, not bearer-token.** A route that needs the current user depends on
-  `CurrentUser` (`dependencies/service.py`), which reads the `milo_access_token` httponly cookie —
+  `CurrentUser` (`dependencies/service.py`), which reads the `milo_access_token` httponly cookie,
   it never accepts a token in a header or body.
 
 ## Error response shape
 
-Every error from `packages/backend` — domain error, rate limit, or unhandled exception — is JSON
+Every error from `packages/backend`, domain error, rate limit, or unhandled exception, is JSON
 with this shape (set by `exception/handlers.py`):
 
 ```json
 { "code": "invalid_credentials", "msg": "That email and password do not match.", "details": {} }
 ```
 
-- `code` — stable, machine-readable, snake_case. Safe to switch on in frontend code
-  (`error.response.data.code === "email_not_verified"`) — more reliable than matching on `msg` or
+- `code`, stable, machine-readable, snake_case. Safe to switch on in frontend code
+  (`error.response.data.code === "email_not_verified"`), more reliable than matching on `msg` or
   HTTP status alone, since several error codes can share a status (e.g. both
   `email_already_verified` and `user_already_exists` are 409).
-- `msg` — human-readable, safe to show directly in UI.
-- `details` — present only when the error carries structured extra data (e.g.
+- `msg`, human-readable, safe to show directly in UI.
+- `details`, present only when the error carries structured extra data (e.g.
   `{"attempts_remaining": 2}` on `verification_code_invalid`, `{"retry_after_seconds": 45}` on
   `resend_too_soon`). Omitted entirely (not `{}`) when there's nothing to add.
 - Unhandled server errors always return `{"code": "internal_error", "msg": "Something went wrong."}`
-  with a 500 — the real exception is logged server-side, never leaked to the client.
+  with a 500, the real exception is logged server-side, never leaked to the client.
 
 ## `/auth` endpoint reference
 
@@ -49,14 +49,14 @@ All request/response fields are defined in `schemas/auth.py`; this table is the 
 | --- | --- | --- | --- | --- |
 | `POST /auth/register` | no | `{name, email, password}` | 201 `VerificationPendingResponse` | `weak_password`, `user_already_exists` (only if the email is already *verified*), `resend_too_soon` |
 | `POST /auth/verify-email/start` | no | `{email}` | 202 `VerificationPendingResponse` | `user_not_found`, `email_already_verified`, `resend_too_soon` |
-| `POST /auth/verify-email/status` | no | `{email}` | 200 `VerificationStatusResponse` (`status: none\|pending\|verified`) | — (always 200; "no pending verification" is a normal state, not an error) |
+| `POST /auth/verify-email/status` | no | `{email}` | 200 `VerificationStatusResponse` (`status: none\|pending\|verified`) |, (always 200; "no pending verification" is a normal state, not an error) |
 | `POST /auth/verify-otp` | no | `{email, code}` | 200 `AuthResponse`, sets auth cookies | `verification_not_found`, `email_already_verified`, `verification_code_expired`, `verification_code_invalid` (`details.attempts_remaining`), `too_many_verification_attempts` |
 | `POST /auth/login` | no | `{email, password}` | 200 `AuthResponse`, sets auth cookies | `invalid_credentials`, `email_not_verified` (`details.email`) |
-| `POST /auth/refresh` | refresh cookie | — | 200 `AuthResponse`, rotates auth cookies | `invalid_token` (missing/expired/wrong-type cookie) |
-| `POST /auth/logout` | no | — | 204, clears auth cookies | — |
-| `GET /auth/me` | access cookie | — | 200 `AuthResponse` | `invalid_token` |
+| `POST /auth/refresh` | refresh cookie | N/A | 200 `AuthResponse`, rotates auth cookies | `invalid_token` (missing/expired/wrong-type cookie) |
+| `POST /auth/logout` | no | N/A | 204, clears auth cookies | N/A |
+| `GET /auth/me` | access cookie | N/A | 200 `AuthResponse` | `invalid_token` |
 
-`AuthResponse` is always `{"user": {id, name, email, email_verified}}` — the password hash and any
+`AuthResponse` is always `{"user": {id, name, email, email_verified}}`, the password hash and any
 internal fields never leave `model.User`.
 
 ## `/resumes` and tracking-link endpoint reference
@@ -66,22 +66,22 @@ All request/response fields are defined in `schemas/resume.py` and `schemas/trac
 | Method & path | Auth required | Request | Success | Notable errors |
 | --- | --- | --- | --- | --- |
 | `POST /resumes` | yes (cookie) | `{title, source_url}` | 201 `ResumeResponse` | `invalid_resume_url` (fails the SSRF guard, or exceeds `resume_url_max_length`) |
-| `GET /resumes` | yes | — | 200 `list[ResumeResponse]` | — |
-| `GET /resumes/{resume_id}` | yes | — | 200 `ResumeResponse` | `resume_not_found` |
+| `GET /resumes` | yes | N/A | 200 `list[ResumeResponse]` | N/A |
+| `GET /resumes/{resume_id}` | yes | N/A | 200 `ResumeResponse` | `resume_not_found` |
 | `PATCH /resumes/{resume_id}` | yes | `{title?, source_url?}`, at least one required | 200 `ResumeResponse` | `resume_not_found`, `invalid_resume_url` (if `source_url` is given and fails the SSRF guard) |
 | `POST /resumes/{resume_id}/links` | yes | `{expires_in_days?}` | 201 `TrackingLinkResponse` | `resume_not_found` (not yours or doesn't exist) |
-| `GET /resumes/{resume_id}/links` | yes | — | 200 `list[TrackingLinkResponse]` | `resume_not_found` |
-| `GET /links` | yes | — | 200 `list[TrackingLinkResponse]`, every link across every resume you own | — |
-| `GET /links/{link_id}` | yes | — | 200 `TrackingLinkResponse` | `tracking_link_not_found` |
-| `PATCH /links/{link_id}` | yes | `{expires_in_days}` (required; `null` clears expiry) | 200 `TrackingLinkResponse` | `tracking_link_not_found` (also raised for an already-revoked link — revoking is permanent, so there's nothing left to edit) |
-| `GET /links/{link_id}/events` | yes | — | 200 `list[AnalyticsEventResponse]`, newest first | `tracking_link_not_found` |
-| `GET /events` | yes | — | 200 `list[AnalyticsEventResponse]`, across every link you own, newest first | — |
-| `DELETE /links/{link_id}` | yes | — | 204 | — (silently no-ops if the link isn't yours, same as revoking something already gone) |
+| `GET /resumes/{resume_id}/links` | yes | N/A | 200 `list[TrackingLinkResponse]` | `resume_not_found` |
+| `GET /links` | yes | N/A | 200 `list[TrackingLinkResponse]`, every link across every resume you own | N/A |
+| `GET /links/{link_id}` | yes | N/A | 200 `TrackingLinkResponse` | `tracking_link_not_found` |
+| `PATCH /links/{link_id}` | yes | `{expires_in_days}` (required; `null` clears expiry) | 200 `TrackingLinkResponse` | `tracking_link_not_found` (also raised for an already-revoked link, revoking is permanent, so there's nothing left to edit) |
+| `GET /links/{link_id}/events` | yes | N/A | 200 `list[AnalyticsEventResponse]`, newest first | `tracking_link_not_found` |
+| `GET /events` | yes | N/A | 200 `list[AnalyticsEventResponse]`, across every link you own, newest first | N/A |
+| `DELETE /links/{link_id}` | yes | N/A | 204 |, (silently no-ops if the link isn't yours, same as revoking something already gone) |
 | `GET /l/{slug}` | no | query: `sid`, `device_category`, `browser`, `os`, `utm_source`, `utm_medium`, `utm_campaign`, `page_number`, `download` | 200, streams the resume document with the original `Content-Type` | `tracking_link_not_found`, `tracking_link_expired` (checked *before* any fetch, so an expired link never triggers a network call or a retry), `tracking_link_revoked`, `resume_fetch_failed` (after exhausting `resume_fetch_max_retries` retries on a transient failure, or immediately on a non-retryable 4xx/oversized body) |
-| `POST /l/{slug}/dwell` | no | `{session_id?, page_number?, dwell_seconds}` | 204, always, even for an unknown/expired/revoked slug | — (best-effort; fed by `navigator.sendBeacon`, which never reads the response) |
+| `POST /l/{slug}/dwell` | no | `{session_id?, page_number?, dwell_seconds}` | 204, always, even for an unknown/expired/revoked slug |, (best-effort; fed by `navigator.sendBeacon`, which never reads the response) |
 
 `GET /l/{slug}` is the public share link: opening it validates expiry/revocation first, then fetches
-the candidate's externally-hosted document (with retry on transient 5xx/transport errors — see
+the candidate's externally-hosted document (with retry on transient 5xx/transport errors, see
 "Resume fetching and retries" below) and records one anonymous `view` (or `download`, with
 `?download=true`) analytics event before streaming the bytes back. The `referrer_domain` signal is
 read server-side from the `Referer` header (hostname only), not trusted from a query param.
@@ -89,66 +89,66 @@ read server-side from the `Referer` header (hostname only), not trusted from a q
 `POST /l/{slug}/dwell` is the dwell-time beacon: `packages/frontend`'s public `/l/[slug]` viewer page
 (`components/app/resume-viewer.tsx`) calls it via `navigator.sendBeacon` when the tab is hidden or
 unloaded, reporting how long the page was open. There is no in-browser PDF renderer in the frontend
-(no pdf.js), so `page_number` is always `1` today — this records whole-document dwell time, not true
+(no pdf.js), so `page_number` is always `1` today, this records whole-document dwell time, not true
 per-PDF-page attention. A link that's since expired or been revoked still records a `view` event for
 this (the viewer was already reading it when the beacon fires; this is treated as a benign race, not
-an error) rather than raising — there is no response for the client to act on anyway.
+an error) rather than raising, there is no response for the client to act on anyway.
 
 ### Resume fetching and retries
 
 `LinkService._fetch_with_retry` (`service/tracking_link.py`) retries `resume_fetch_max_retries`
 times (default 2, so 3 attempts total) with a linear backoff (`resume_fetch_retry_backoff_seconds *
 attempt`) on `httpx.TransportError` or a `5xx` response. A non-retryable `4xx` or an oversized body
-(> `resume_fetch_max_bytes`) raises `resume_fetch_failed` immediately — retrying a 404 or a
+(> `resume_fetch_max_bytes`) raises `resume_fetch_failed` immediately, retrying a 404 or a
 too-large file wastes three timeouts' worth of latency for the same wrong answer.
 
 ## Rate limiting
 
 Backed by `slowapi` (`core/_rate_limit.py`), wired in two layers:
 
-1. **App-wide default** — `SlowAPIMiddleware` applies `rate_limit_default` (`200/minute`) to
+1. **App-wide default**, `SlowAPIMiddleware` applies `rate_limit_default` (`200/minute`) to
    *every* route automatically, including ones with no decorator. This is the floor, not the
    whole story.
-2. **Per-route override** — `@limiter.limit(lambda: get_settings().rate_limit_<name>)` on routes
+2. **Per-route override**, `@limiter.limit(lambda: get_settings().rate_limit_<name>)` on routes
    where the default is too loose for what the route can be used for (credential stuffing,
    OTP brute-forcing, signup spam, etc.).
 
 | Route | Setting | Default | Why this route |
 | --- | --- | --- | --- |
-| `POST /auth/register` | `rate_limit_register` | `5/hour` | Prevents signup/email-spam abuse — also gates the first email send. |
+| `POST /auth/register` | `rate_limit_register` | `5/hour` | Prevents signup/email-spam abuse, also gates the first email send. |
 | `POST /auth/verify-email/start` | `rate_limit_resend_otp` | `5/hour` | Resending the OTP sends another email; same abuse shape as register. |
-| `POST /auth/verify-email/status` | `rate_limit_verification_status` | `30/minute` | Polled by the frontend while a visitor waits for their code — looser than the others since it's read-only. |
-| `POST /auth/verify-otp` | `rate_limit_verify_otp` | `10/minute` | Caps brute-forcing a short numeric code; `AuthService` also tracks `otp_max_attempts` independently (see [backend-architecture.md](./backend-architecture.md)) — two separate defenses, not one. |
+| `POST /auth/verify-email/status` | `rate_limit_verification_status` | `30/minute` | Polled by the frontend while a visitor waits for their code, looser than the others since it's read-only. |
+| `POST /auth/verify-otp` | `rate_limit_verify_otp` | `10/minute` | Caps brute-forcing a short numeric code; `AuthService` also tracks `otp_max_attempts` independently (see [backend-architecture.md](./backend-architecture.md)), two separate defenses, not one. |
 | `POST /auth/login` | `rate_limit_login` | `10/minute` | Caps credential stuffing / password guessing. |
 | `POST /auth/refresh` | `rate_limit_refresh` | `30/minute` | Not credential-guessable (requires a valid refresh cookie already), but still capped so a compromised/buggy client can't hammer token rotation. |
-| `POST /auth/logout` | `rate_limit_logout` | `20/minute` | Low-risk, but still capped rather than left purely on the app-wide default — consistent with "every mutating route decides its limit on purpose" rather than by omission. |
-| `GET /auth/me` | — (app-wide default only) | `200/minute` | Deliberately not given a tighter override: it's read-only, called on every app mount/tab, and the one route where an aggressive limit would most likely lock out a legitimate visitor rather than an attacker. |
+| `POST /auth/logout` | `rate_limit_logout` | `20/minute` | Low-risk, but still capped rather than left purely on the app-wide default, consistent with "every mutating route decides its limit on purpose" rather than by omission. |
+| `GET /auth/me` |, (app-wide default only) | `200/minute` | Deliberately not given a tighter override: it's read-only, called on every app mount/tab, and the one route where an aggressive limit would most likely lock out a legitimate visitor rather than an attacker. |
 | `POST /resumes` | `rate_limit_create_resume` | `20/hour` | Each create triggers an SSRF-guard DNS resolution; caps abuse of that as a probing oracle. |
 | `PATCH /resumes/{id}` | `rate_limit_update_resume` | `30/hour` | Same SSRF-guard concern as create, when `source_url` changes. |
 | `POST /resumes/{id}/links` | `rate_limit_create_link` | `30/hour` | Caps mass link generation. |
 | `PATCH /links/{id}` | `rate_limit_update_link` | `30/hour` | Low-risk, but still capped rather than left on the app-wide default only. |
 | `GET /l/{slug}` | `rate_limit_resolve_link` | `120/minute` | Each open triggers an outbound fetch (with retries) to the resume's external host; looser than the create routes since this is the one a real recruiter/viewer hits, but still capped so a slug can't be used to hammer an arbitrary external origin through Milo's server. |
-| `POST /l/{slug}/dwell` | `rate_limit_dwell_beacon` | `240/minute` | Looser than `resolve_link` since it triggers no outbound fetch, just a Mongo insert, but still capped — a beacon endpoint with no auth is otherwise a free-form write oracle. |
+| `POST /l/{slug}/dwell` | `rate_limit_dwell_beacon` | `240/minute` | Looser than `resolve_link` since it triggers no outbound fetch, just a Mongo insert, but still capped, a beacon endpoint with no auth is otherwise a free-form write oracle. |
 
 All limits live in `Settings` (`core/_settings.py`), never as a literal string in a decorator, so
-they're configurable per environment without a code change — see the checklist below.
+they're configurable per environment without a code change, see the checklist below.
 
 **Rate-limit keying is privacy-safe by construction.** `client_key()` (`core/_rate_limit.py`) never
 stores or logs a raw IP: it takes the request IP (or the first `X-Forwarded-For` hop), hashes it
 with `HMAC`-style salting (`ip_hash_salt`) plus the current UTC date, and truncates the digest. The
 salt rotates per day, so the key an IP maps to today can't be correlated with the key it mapped to
-yesterday — enough to rate-limit a given IP *within a day* without keeping anything that could be
+yesterday, enough to rate-limit a given IP *within a day* without keeping anything that could be
 used to track a visitor across days, which would violate the no-IP-identity rule in root
 `CLAUDE.md`.
 
 A 429 from any limiter is always `{"code": "rate_limited", "msg": "Too many requests. Try again
 shortly."}` with `Retry-After`/`X-RateLimit-*` headers (`exception/handlers.py`'s
-`rate_limit_handler`) — the same error shape as every other error, not a special case the frontend
+`rate_limit_handler`), the same error shape as every other error, not a special case the frontend
 has to branch on separately.
 
 ## Security design and rules
 
-These are the backend's actual security properties today, as implemented — not aspirational. Keep
+These are the backend's actual security properties today, as implemented, not aspirational. Keep
 this section in sync with `core/_settings.py`'s validators and `core/_security.py` when either
 changes; those two files are the source of truth, this is the summary.
 
@@ -157,7 +157,7 @@ changes; those two files are the source of truth, this is the summary.
 - **Cookie-based auth, never bearer tokens** (see "Conventions" above). Both cookies are
   `httponly` always, `secure` in production (`cookie_secure` defaults to `is_production` and a
   validator refuses to start in production with it disabled), and `samesite="none"` in production /
-  `"lax"` in development — a validator rejects `samesite="none"` without `secure=true`, since
+  `"lax"` in development, a validator rejects `samesite="none"` without `secure=true`, since
   browsers reject that combination anyway.
 - **Access tokens are short-lived (15 min default), refresh tokens long-lived (30 days default)**
   and rotate on every use (`POST /auth/refresh` issues a fresh pair, it doesn't just extend the
@@ -166,10 +166,10 @@ changes; those two files are the source of truth, this is the summary.
   `aud`/`iss`, so a token minted for a different audience or issuer is rejected outright.
 - **CORS is explicit, not wildcarded.** `cors_origins` is a literal allow-list (comma-separated or
   JSON list via env), and a validator refuses to start if `*` is combined with
-  `cors_allow_credentials=true` — that combination is meaningless anyway since browsers reject it,
+  `cors_allow_credentials=true`, that combination is meaningless anyway since browsers reject it,
   but failing fast here catches a misconfiguration before it reaches a browser.
 - **Permissions-Policy** is set on the frontend (`next.config.ts`:
-  `camera=(), microphone=(), geolocation=(), interest-cohort=()`) — product policy, not boilerplate,
+  `camera=(), microphone=(), geolocation=(), interest-cohort=()`), product policy, not boilerplate,
   see the `nextjs-app` skill. Mentioned here because it's part of the same "no identity signal,
   ever" posture this file's rate-limit-keying section also serves.
 
@@ -178,32 +178,32 @@ changes; those two files are the source of truth, this is the summary.
 - **Passwords are hashed with Argon2** (`argon2-cffi`'s `PasswordHasher`, not bcrypt/sha256) via
   `hash_password`/`verify_password`; `password_needs_rehash` exists so a login can transparently
   upgrade an old hash's parameters without a forced reset. Password length is bounded
-  (`password_min_length`/`password_max_length`, 12–128 by default) — checked in `AuthService`, not
+  (`password_min_length`/`password_max_length`, 12–128 by default), checked in `AuthService`, not
   left to the schema alone, so the message (`weak_password`, with the actual bound in `details`) is
   domain-controlled.
 - **OTP codes are generated with `secrets.randbelow`** (CSPRNG, not `random`), stored only as an
   `HMAC-SHA256` digest keyed by `otp_hash_secret` (never the raw code), and compared with
-  `hmac.compare_digest` — constant-time, so verifying a code can't leak timing information about
+  `hmac.compare_digest`, constant-time, so verifying a code can't leak timing information about
   how much of it was correct. `AuthService.verify_otp` also enforces `otp_max_attempts`
   independently of the route-level rate limit (two separate defenses on the same attack, see
   "Rate limiting" above).
 - **Secrets have no insecure default in production.** `jwt_secret_key`, `otp_hash_secret`, and
   `ip_hash_salt` all get a random value generated at startup in development (so there's zero
   config needed locally), but a validator raises in production if `jwt_secret_key` or
-  `otp_hash_secret` is unset, or shorter than 32 characters — an accidentally-unset secret fails
+  `otp_hash_secret` is unset, or shorter than 32 characters, an accidentally-unset secret fails
   startup, not silently falls back to something guessable.
 
 ### Error handling & information disclosure
 
-- **Every error — domain, rate-limit, or unhandled — has the same `{code, msg, details?}` shape**
+- **Every error, domain, rate-limit, or unhandled, has the same `{code, msg, details?}` shape**
   (see "Error response shape" above); an unhandled exception is logged with its real traceback
   server-side but the client only ever sees `{"code": "internal_error", "msg": "Something went
-  wrong."}` — a 500 never leaks a stack trace, a query, or an internal type name to the client.
+  wrong."}`, a 500 never leaks a stack trace, a query, or an internal type name to the client.
 - **`UserAlreadyExists` only fires once an email is verified** (see the checklist's privacy note
-  and `backend-architecture.md`) — registering again with a pending-but-unverified email is treated
+  and `backend-architecture.md`), registering again with a pending-but-unverified email is treated
   as "resend the code," not as an enumeration-friendly "that email is taken." This is a deliberate
   account-enumeration mitigation, not an oversight.
-- **`AuthResponse` never carries `password_hash` or any internal field** — `_public()` in
+- **`AuthResponse` never carries `password_hash` or any internal field**, `_public()` in
   `routes/auth.py` is the one place a `User` model becomes an API response, and it's an explicit
   allow-list of fields, not `model.model_dump()`.
 
@@ -214,7 +214,7 @@ changes; those two files are the source of truth, this is the summary.
 secret, `cookie_secure=false`, a non-HTTPS CORS origin, `EMAIL_DELIVERY=console` (which would
 silently strand every signup since the OTP would only reach a log line, never an inbox), an SMTP
 host from the local-mail-catcher list, or SMTP configured without TLS or credentials. Treat any new
-production-only requirement the same way — a startup-time `ValueError`, not a runtime surprise.
+production-only requirement the same way, a startup-time `ValueError`, not a runtime surprise.
 
 ## Designing a new endpoint (checklist)
 
@@ -222,16 +222,16 @@ When adding a route beyond auth (e.g. the eventual tracking-link or analytics-ev
 
 1. Add/extend a `model` for what's actually persisted.
 2. Add a `dao` method; add any new index to that DAO's `create_indexes()`, not as a one-off script.
-3. Add the business rule to `service` — it must not import `fastapi` or a Mongo type.
+3. Add the business rule to `service`, it must not import `fastapi` or a Mongo type.
 4. Add request/response `schemas`.
 5. Add any new failure mode as an `AppException` subclass in `exception/`.
-6. Wire the route in `routes/`, resolving the service via a `dependencies` factory — never
+6. Wire the route in `routes/`, resolving the service via a `dependencies` factory, never
    construct a DAO or open a DB connection directly in a route.
-7. Decide the rate limit (or explicitly decide the route doesn't need one, as `GET /auth/me` does —
+7. Decide the rate limit (or explicitly decide the route doesn't need one, as `GET /auth/me` does,
    see "Rate limiting" above) and add the setting to `Settings` rather than hardcoding a literal in
    the decorator.
 8. Check every new field against the allowed-signal list in root `CLAUDE.md` /
-   [business-requirements.md](./business-requirements.md) *before* writing the `model` — this is
+   [business-requirements.md](./business-requirements.md) *before* writing the `model`, this is
    the step most likely to silently reintroduce a privacy violation (an IP field, a visitor id that
    isn't session-scoped, etc.).
 9. Add the endpoint to this file's reference table.

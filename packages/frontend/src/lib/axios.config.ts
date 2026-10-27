@@ -5,7 +5,7 @@ import { useAuthStore } from "@/stores/auth-store";
 declare module "axios" {
   export interface AxiosRequestConfig {
     /**
-     * Set true on a request that must never trigger the 401 refresh-and-retry below — every call
+     * Set true on a request that must never trigger the 401 refresh-and-retry below: every call
      * that doesn't depend on an existing session (register, login, verify-otp, the refresh call
      * itself, ...). Defaults to false/unset, so any other authenticated request gets the
      * refresh-and-retry automatically with no per-call opt-in needed.
@@ -49,7 +49,7 @@ api.interceptors.response.use(
     try {
       await refreshSession();
     } catch (refreshError) {
-      // Refresh token is gone or expired — the backend already dropped its
+      // Refresh token is gone or expired. The backend already dropped its
       // cookies on that failed request. Just clear local state so guarded
       // routes redirect to /login; nothing client-side to clean up.
       useAuthStore.getState().clearAuth();

@@ -16,7 +16,7 @@ type Props = {
 };
 
 /**
- * Resolves live — re-runs on every mount, including a hard refresh — so the OTP step's cooldown
+ * Resolves live, re-runs on every mount, including a hard refresh, so the OTP step's cooldown
  * always reflects what the backend actually has right now, never a client-only timer that a
  * refresh would reset to the original value.
  */
@@ -29,8 +29,8 @@ export function VerifyStatus({ email, className }: Props) {
     if (!email || requested.current) return;
     requested.current = true;
     resolve.mutate({ email });
-    // resolve is a stable mutation handle; email (via the ref guard above) is the real dependency
-    // — re-running this on every resolve identity change would re-trigger the request.
+    // resolve is a stable mutation handle; email (via the ref guard above) is the real dependency.
+    // Re-running this on every resolve identity change would re-trigger the request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email]);
 

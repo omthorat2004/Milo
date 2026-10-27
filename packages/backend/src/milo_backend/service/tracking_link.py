@@ -137,7 +137,7 @@ class LinkService:
         self, *, link_id: str, owner_id: str, expires_in_days: int | None
     ) -> LinkOverview:
         """Raises TrackingLinkNotFound both when the link doesn't exist and when
-        it's already revoked — revoking is permanent, so there is nothing left
+        it's already revoked: revoking is permanent, so there is nothing left
         to edit, and that's indistinguishable from "not yours" to the caller."""
         expires_at = (
             datetime.now(UTC) + timedelta(days=expires_in_days)
@@ -165,7 +165,7 @@ class LinkService:
         """Best-effort: sent via `navigator.sendBeacon`, so there is no response
         the caller can act on. A link that's gone, expired, or revoked by the
         time the beacon arrives is a benign race (the viewer was already
-        reading it) — this silently no-ops rather than raising."""
+        reading it), this silently no-ops rather than raising."""
         link = await self.links.get_by_slug(slug)
         if link is None:
             return

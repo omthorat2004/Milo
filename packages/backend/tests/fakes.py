@@ -1,6 +1,6 @@
 """In-memory fakes for the DAOs, implementing each real DAO's exact method
 signatures (per docs/testing.md). Used by `tests/service/*` so business rules
-are tested without a database — see backend-architecture.md's layering
+are tested without a database, see backend-architecture.md's layering
 rationale for why `service` is designed to allow this.
 """
 

@@ -50,7 +50,7 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
     { label: "Downloads", value: String(summary.downloads) },
     {
       label: "Download rate",
-      value: summary.downloadRate === null ? "—" : `${Math.round(summary.downloadRate * 100)}%`,
+      value: summary.downloadRate === null ? "N/A" : `${Math.round(summary.downloadRate * 100)}%`,
     },
   ];
 

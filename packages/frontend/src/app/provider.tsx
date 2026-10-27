@@ -9,7 +9,7 @@ import { getQueryClient } from "@/lib/get-query-client";
 export function Provider({ children }: { children: React.ReactNode }) {
   // getQueryClient() returns a per-request client on the server (via React
   // cache()) and the one browser singleton once this hydrates on the client
-  // — see lib/get-query-client.ts. No useState needed to pick between them.
+  // See lib/get-query-client.ts. No useState needed to pick between them.
   const queryClient = getQueryClient();
 
   return (

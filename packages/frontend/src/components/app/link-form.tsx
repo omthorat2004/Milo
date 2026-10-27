@@ -36,7 +36,7 @@ export function LinkForm({ className }: { className?: string }) {
     try {
       void new URL(trimmedUrl);
     } catch {
-      setError("That doesn't look like a full URL — include https://.");
+      setError("That doesn't look like a full URL. Include https://.");
       return;
     }
 
@@ -58,11 +58,11 @@ export function LinkForm({ className }: { className?: string }) {
       <Field
         id={titleId}
         label="Title"
-        hint="How you'll tell this link apart from the others — the role, company, or audience."
+        hint="How you'll tell this link apart from the others: the role, company, or audience."
         inputProps={{
           value: title,
           onChange: (event) => setTitle(event.target.value),
-          placeholder: "Backend engineer — Acme",
+          placeholder: "Backend engineer at Acme",
           required: true,
           maxLength: 80,
         }}
@@ -71,7 +71,7 @@ export function LinkForm({ className }: { className?: string }) {
       <Field
         id={urlId}
         label="Resume URL"
-        hint="Wherever the PDF already lives — Google Drive, Dropbox, your own site. Milo stores the URL, not the file."
+        hint="Wherever the PDF already lives: Google Drive, Dropbox, your own site. Milo stores the URL, not the file."
         inputProps={{
           value: sourceUrl,
           onChange: (event) => setSourceUrl(event.target.value),

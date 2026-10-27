@@ -12,8 +12,8 @@ def get_or_create_dev_secret(name: str, *, length: int = 48) -> str:
     Dev-only convenience: a secret auto-generated with no JWT_SECRET_KEY /
     OTP_HASH_SECRET set in the environment used to be minted fresh on every
     process start (`uvicorn --reload` restarts the whole worker on every file
-    save), silently invalidating every cookie issued before that restart —
-    both the access and refresh token fail signature verification at once,
+    save), silently invalidating every cookie issued before that restart.
+    Both the access and refresh token fail signature verification at once,
     which looks like a random, constant 401 loop rather than a real bug.
 
     This persists the generated value to a local, gitignored JSON file next

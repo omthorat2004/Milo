@@ -5,7 +5,7 @@ import html
 from milo_backend.core._settings import Settings
 
 # Hex values mirror packages/styles/globals.css's light-mode tokens (ink-950, sand-50/200/500,
-# signal-400) — email clients can't read CSS custom properties, so these are pinned copies, not a
+# signal-400). Email clients can't read CSS custom properties, so these are pinned copies, not a
 # second source of truth to maintain by hand. Keep them in sync if the palette changes.
 _INK_950 = "#060807"
 _SAND_50 = "#faf4ea"
@@ -56,7 +56,7 @@ def verification_html(*, name: str, code: str, settings: Settings) -> str:
       <tr>
         <td style="padding-top:20px;font-size:13px;color:{_SAND_500};line-height:1.6;">
           <p style="margin:0 0 4px;">This code expires in {minutes} minutes.</p>
-          <p style="margin:0;">Didn't request this? You can safely ignore this email — no account was created or changed.</p>
+          <p style="margin:0;">Didn't request this? You can safely ignore this email. No account was created or changed.</p>
         </td>
       </tr>
     </table>

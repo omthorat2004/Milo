@@ -8,7 +8,7 @@ const SESSION_STORAGE_KEY = "milo_viewer_session_id";
 
 /**
  * Anonymous, scoped to this browser tab's lifetime only (sessionStorage, not
- * localStorage) — matches the "anonymous session id" allowed signal, never a
+ * localStorage), matches the "anonymous session id" allowed signal, never a
  * durable cross-visit identifier. Wrapped in try/catch: private browsing or a
  * blocked storage API should degrade to "no session id," not break the page.
  */
@@ -28,7 +28,7 @@ function getOrCreateSessionId(): string | null {
 /**
  * The public, unauthenticated page a tracking link resolves to. Milo has no
  * in-browser PDF renderer (no pdf.js), so dwell time here is "time this page
- * was open," not true per-page PDF attention — `pageNumber` is always 1. The
+ * was open," not true per-page PDF attention, `pageNumber` is always 1. The
  * iframe's `src` hits the backend's `GET /l/{slug}` directly, which is the
  * same request that records the `view`/`download` event with retry and the
  * expiry/revocation check; this component only adds the dwell beacon.

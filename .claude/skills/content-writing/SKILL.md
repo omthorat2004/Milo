@@ -1,13 +1,14 @@
 ---
 name: content-writing
-description: Writing or editing any user-facing copy in Milo — marketing pages (packages/landing), UI copy (headings, labels, empty states, error messages, button text), docs, and the shipping-log changelog. Use whenever drafting or revising text a real person reads, not just code comments. Covers SEO structure, plain understandable language, and a hard rule against em dashes and generic AI-sounding phrasing.
+description: Writing or editing any user-facing copy in Milo, marketing pages (packages/landing), UI copy (headings, labels, empty states, error messages, button text), and the shipping-log changelog. Use whenever drafting or revising text an end user reads, not a developer (see the technical-writing skill for docs/code comments/commit messages). Covers SEO structure, plain understandable language, and a hard rule against em dashes and generic AI-sounding phrasing.
 ---
 
 # Writing content for Milo
 
 This governs words, not code: marketing copy, page headings and body text, UI labels/empty
-states/error messages, the `/path` shipping log, and any docs meant for a human reader. It does not
-cover code comments or commit messages.
+states/error messages, and the `/path` shipping log, text an end user of the product reads. It does
+not cover code comments, docstrings, commit messages, or `docs/*.md`/skill files, see the
+`technical-writing` skill for that, written for a developer or teammate instead of a customer.
 
 ## Hard rules
 

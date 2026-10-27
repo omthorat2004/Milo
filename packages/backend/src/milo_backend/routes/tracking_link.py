@@ -156,7 +156,7 @@ async def record_dwell_beacon(
     service: LinkServiceDep,
 ) -> None:
     """Fed by `navigator.sendBeacon` as a viewer leaves the resume page, so the
-    client never reads this response — best-effort, always 204."""
+    client never reads this response: best-effort, always 204."""
     await service.record_dwell(
         slug=slug,
         session_id=payload.session_id,

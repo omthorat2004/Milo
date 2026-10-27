@@ -57,7 +57,7 @@ export function ThemeToggle({ className }: Props) {
         );
       })
       .catch(() => {
-        // Transition was skipped (e.g. a second click mid-animation) — the
+        // Transition was skipped (e.g. a second click mid-animation). The
         // class toggle inside startViewTransition's callback already ran.
       });
   }

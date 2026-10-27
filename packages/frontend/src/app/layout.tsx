@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
-        {/* Runs before hydration to set the theme class — see theme-script.ts */}
+        {/* Runs before hydration to set the theme class, see theme-script.ts */}
         <script
           type={typeof window === "undefined" ? "text/javascript" : "text/plain"}
           suppressHydrationWarning

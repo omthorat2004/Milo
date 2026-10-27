@@ -22,7 +22,7 @@ function AuthGate({ fullScreen = false }: { fullScreen?: boolean }) {
 
 /**
  * Wraps the (app) route group. Redirects to /login once AuthProvider's
- * initial check resolves and there's no session — never renders the
+ * initial check resolves and there's no session. Never renders the
  * protected children for a signed-out visitor, not even for a frame.
  */
 export function PrivateProvider({ children }: { children: React.ReactNode }) {

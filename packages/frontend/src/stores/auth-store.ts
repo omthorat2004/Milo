@@ -14,7 +14,7 @@ type AuthState = {
 };
 
 /**
- * Pure client state — who's logged in, and whether the initial session check
+ * Pure client state, who's logged in, and whether the initial session check
  * is still in flight. The check itself (fetching /auth/me and keeping it
  * fresh) lives in useAuthSession (hooks/use-auth-session.ts), which calls
  * these setters from a TanStack Query result.

@@ -31,8 +31,8 @@ export type VerifyOtpInput = { email: string; code: string };
 
 type AuthEnvelope = { user: AuthUser };
 
-// None of these establish or depend on an existing session — register/login/verify-otp create one
-// from scratch, the verify-email endpoints are public lookups — so a 401 from any of them is a
+// None of these establish or depend on an existing session: register/login/verify-otp create one
+// from scratch, the verify-email endpoints are public lookups. So a 401 from any of them is a
 // real domain error, never "the access token needs refreshing." ignoreRefresh skips
 // axios.config.ts's refresh-and-retry for exactly that reason (see its own comment for the default
 // case: anything *without* this flag, like me(), gets the refresh-and-retry automatically).

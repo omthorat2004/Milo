@@ -21,8 +21,8 @@ def _run_async[T](coro: Coroutine[Any, Any, T]) -> T:
     In production the Celery worker is a separate process with no event loop,
     so the plain `asyncio.run` path is all that's ever exercised. But
     `celery_task_always_eager` defaults to true outside production (see
-    Settings), which runs this task inline on the caller's call stack — and
-    the caller is always an async FastAPI route handler, i.e. already inside
+    Settings), which runs this task inline on the caller's call stack, and
+    the caller is always an async FastAPI route handler, already inside
     a running event loop. `asyncio.run` refuses to nest, so that path needs
     its own loop on a separate thread instead.
     """

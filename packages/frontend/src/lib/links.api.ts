@@ -79,7 +79,7 @@ export type DwellBeaconInput = {
 };
 
 /**
- * Fire-and-forget via `navigator.sendBeacon` — survives the tab closing,
+ * Fire-and-forget via `navigator.sendBeacon`, survives the tab closing,
  * unlike a normal fetch. There is no response to read; a failed send (e.g. no
  * `sendBeacon` support) is silently dropped, same as the backend treats a
  * beacon for a since-expired link.
@@ -111,7 +111,7 @@ export async function listMyEvents(): Promise<AnalyticsEvent[]> {
 
 export type LinkStatus = "active" | "expired" | "revoked";
 
-/** Milo has no "paused" state — a link is live until it expires or is revoked (irreversible). */
+/** Milo has no "paused" state: a link is live until it expires or is revoked (irreversible). */
 export function linkStatus(link: TrackingLink): LinkStatus {
   if (link.revoked_at) return "revoked";
   if (link.expires_at && new Date(link.expires_at).getTime() <= Date.now()) return "expired";

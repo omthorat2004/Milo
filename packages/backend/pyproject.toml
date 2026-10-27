@@ -41,7 +41,7 @@ dev = [
 
 # celery ships no py.typed marker and no stub package exists on PyPI, so mypy
 # can't see its types at all. Scoped to just this module, not a blanket
-# ignore_missing_imports — every other dependency still has to resolve.
+# ignore_missing_imports, every other dependency still has to resolve.
 [[tool.mypy.overrides]]
 module = "celery.*"
 ignore_missing_imports = true

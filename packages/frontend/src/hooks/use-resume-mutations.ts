@@ -19,7 +19,7 @@ export function useUpdateResumeMutation(): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: resumesQueryKey });
       queryClient.invalidateQueries({ queryKey: resumeQueryKey(resume.id) });
       // Links denormalize resume_title/resume_source_url onto their own
-      // listing (LinkOverview on the backend) — those need a refetch too.
+      // listing (LinkOverview on the backend), those need a refetch too.
       queryClient.invalidateQueries({ queryKey: linksQueryKey });
     },
   });

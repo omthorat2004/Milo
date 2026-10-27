@@ -27,7 +27,7 @@ def service(settings: Settings) -> ResumeService:
 def fake_url_guard(monkeypatch: pytest.MonkeyPatch) -> None:
     """Service tests exercise ResumeService's own logic, not the SSRF guard's
     DNS resolution (that's verified separately, see backend-architecture.md's
-    `_url_guard.py` entry) — a live DNS lookup in a unit test is slow and
+    `_url_guard.py` entry), a live DNS lookup in a unit test is slow and
     network-flaky, exactly what docs/testing.md says `service` tests avoid."""
 
     async def _fake_ensure_public_url(url: str) -> None:
