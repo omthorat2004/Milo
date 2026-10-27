@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 
+import { ActivityTrend } from "@/components/app/activity-trend";
 import { AnalyticsPanels } from "@/components/app/analytics-panels";
 import { EmptyState } from "@/components/app/empty-state";
+import { TopLinksPanel } from "@/components/app/top-links";
 import { useMyEventsQuery, useMyLinksQuery } from "@/hooks/use-link-queries";
 import { computeSummary, formatRelativeTime } from "@/lib/links-analytics";
 
@@ -43,6 +45,10 @@ export function AccountDashboard() {
           </div>
         ))}
       </dl>
+
+      <ActivityTrend events={events} />
+
+      <TopLinksPanel links={links} events={events} />
 
       <AnalyticsPanels events={events} />
 

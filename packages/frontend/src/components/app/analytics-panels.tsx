@@ -1,68 +1,123 @@
 "use client";
 
 import { EmptyState } from "@/components/app/empty-state";
-import { pageEngagement, trafficSources } from "@/lib/links-analytics";
+import {
+  browserBreakdown,
+  deviceBreakdown,
+  osBreakdown,
+  pageEngagement,
+  trafficSources,
+  type NamedCount,
+} from "@/lib/links-analytics";
 import type { AnalyticsEvent } from "@/lib/links.api";
 
 export function AnalyticsPanels({ events }: { events: AnalyticsEvent[] }) {
   const sources = trafficSources(events);
   const pages = pageEngagement(events);
+  const devices = deviceBreakdown(events);
+  const browsers = browserBreakdown(events);
+  const operatingSystems = osBreakdown(events);
 
   return (
-    <section className="mt-8 grid gap-4 lg:grid-cols-3">
-      <Panel title="Traffic sources" className="lg:col-span-2">
-        {sources.length === 0 ? (
-          <EmptyState
-            title="Nothing to attribute yet"
-            description="Once a tracking link is opened, this shows where the traffic came from: LinkedIn, a portfolio, an email, or direct."
-            className="border-0 bg-transparent px-0 py-8"
-          />
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {sources.map((source) => {
-              const max = sources[0]?.count ?? 1;
-              return (
-                <li key={source.domain} className="flex items-center gap-3">
-                  <span className="w-32 shrink-0 truncate text-sm text-foreground">
-                    {source.domain}
-                  </span>
-                  <div className="h-1.5 flex-1 rounded-full bg-surface">
-                    <div
-                      className="h-1.5 rounded-full bg-signal-400"
-                      style={{ width: `${(source.count / max) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-8 shrink-0 text-right text-sm text-foreground-muted">
-                    {source.count}
+    <>
+      <section className="mt-8 grid gap-4 lg:grid-cols-3">
+        <Panel title="Traffic sources" className="lg:col-span-2">
+          {sources.length === 0 ? (
+            <EmptyState
+              title="Nothing to attribute yet"
+              description="Once a tracking link is opened, this shows where the traffic came from: LinkedIn, a portfolio, an email, or direct."
+              className="border-0 bg-transparent px-0 py-8"
+            />
+          ) : (
+            <BarList
+              items={sources.map((source) => ({ name: source.domain, count: source.count }))}
+            />
+          )}
+        </Panel>
+
+        <Panel title="Page engagement">
+          {pages.length === 0 ? (
+            <EmptyState
+              title="No pages read yet"
+              description="Per-page attention appears here after the first view."
+              className="border-0 bg-transparent px-0 py-8"
+            />
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {pages.map((page) => (
+                <li key={page.page} className="flex items-center justify-between text-sm">
+                  <span className="text-foreground">Page {page.page}</span>
+                  <span className="text-foreground-muted">
+                    {page.views} views · {page.avgDwellSeconds}s avg
                   </span>
                 </li>
-              );
-            })}
-          </ul>
-        )}
-      </Panel>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </section>
 
-      <Panel title="Page engagement">
-        {pages.length === 0 ? (
-          <EmptyState
-            title="No pages read yet"
-            description="Per-page attention appears here after the first view."
-            className="border-0 bg-transparent px-0 py-8"
-          />
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {pages.map((page) => (
-              <li key={page.page} className="flex items-center justify-between text-sm">
-                <span className="text-foreground">Page {page.page}</span>
-                <span className="text-foreground-muted">
-                  {page.views} views · {page.avgDwellSeconds}s avg
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-    </section>
+      <section className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Panel title="Devices">
+          {devices.length === 0 ? (
+            <EmptyState
+              title="No devices yet"
+              description="Desktop, mobile, or tablet, recorded from the viewer's browser only."
+              className="border-0 bg-transparent px-0 py-8"
+            />
+          ) : (
+            <BarList items={devices} />
+          )}
+        </Panel>
+
+        <Panel title="Browsers">
+          {browsers.length === 0 ? (
+            <EmptyState
+              title="No browsers yet"
+              description="Chrome, Safari, Firefox, and so on."
+              className="border-0 bg-transparent px-0 py-8"
+            />
+          ) : (
+            <BarList items={browsers} />
+          )}
+        </Panel>
+
+        <Panel title="Operating systems">
+          {operatingSystems.length === 0 ? (
+            <EmptyState
+              title="No OS data yet"
+              description="macOS, Windows, iOS, Android, and so on."
+              className="border-0 bg-transparent px-0 py-8"
+            />
+          ) : (
+            <BarList items={operatingSystems} />
+          )}
+        </Panel>
+      </section>
+    </>
+  );
+}
+
+function BarList({ items }: { items: NamedCount[] }) {
+  const max = items[0]?.count ?? 1;
+
+  return (
+    <ul className="mt-4 space-y-3">
+      {items.map((item) => (
+        <li key={item.name} className="flex items-center gap-3">
+          <span className="w-32 shrink-0 truncate text-sm text-foreground">{item.name}</span>
+          <div className="h-1.5 flex-1 rounded-full bg-surface">
+            <div
+              className="h-1.5 rounded-full bg-signal-400"
+              style={{ width: `${(item.count / max) * 100}%` }}
+            />
+          </div>
+          <span className="w-8 shrink-0 text-right text-sm text-foreground-muted">
+            {item.count}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

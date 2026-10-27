@@ -1,13 +1,33 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  browserBreakdown,
   computeSummary,
+  dailyActivity,
+  deviceBreakdown,
   formatDwell,
   formatRelativeTime,
+  osBreakdown,
   pageEngagement,
+  topLinks,
   trafficSources,
 } from "@/lib/links-analytics";
-import type { AnalyticsEvent } from "@/lib/links.api";
+import type { AnalyticsEvent, TrackingLink } from "@/lib/links.api";
+
+function link(overrides: Partial<TrackingLink> = {}): TrackingLink {
+  return {
+    id: "link-1",
+    slug: "abc123",
+    share_url: "https://milo.app/l/abc123",
+    resume_id: "resume-1",
+    resume_title: "My resume",
+    resume_source_url: "https://example.com/resume.pdf",
+    created_at: new Date().toISOString(),
+    expires_at: null,
+    revoked_at: null,
+    ...overrides,
+  };
+}
 
 function event(overrides: Partial<AnalyticsEvent> = {}): AnalyticsEvent {
   return {
@@ -123,5 +143,108 @@ describe("formatRelativeTime", () => {
   it("renders days for an older timestamp", () => {
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     expect(formatRelativeTime(threeDaysAgo)).toBe("3d ago");
+  });
+});
+
+describe("deviceBreakdown / browserBreakdown / osBreakdown", () => {
+  it("groups by the field, sorted by count descending", () => {
+    const events = [
+      event({ device_category: "desktop" }),
+      event({ device_category: "desktop" }),
+      event({ device_category: "mobile" }),
+    ];
+
+    expect(deviceBreakdown(events)).toEqual([
+      { name: "desktop", count: 2 },
+      { name: "mobile", count: 1 },
+    ]);
+  });
+
+  it("buckets a null field as Unknown rather than dropping the event", () => {
+    const events = [event({ browser: null }), event({ browser: "Chrome" })];
+
+    expect(browserBreakdown(events)).toEqual(
+      expect.arrayContaining([
+        { name: "Chrome", count: 1 },
+        { name: "Unknown", count: 1 },
+      ]),
+    );
+  });
+
+  it("reads the os field independently of device/browser", () => {
+    const events = [event({ os: "macOS" }), event({ os: "macOS" }), event({ os: "Windows" })];
+
+    expect(osBreakdown(events)).toEqual([
+      { name: "macOS", count: 2 },
+      { name: "Windows", count: 1 },
+    ]);
+  });
+});
+
+describe("dailyActivity", () => {
+  it("returns exactly `days` buckets, oldest first, zero-filled", () => {
+    const result = dailyActivity([], 7);
+    expect(result).toHaveLength(7);
+    expect(result.every((day) => day.views === 0 && day.downloads === 0)).toBe(true);
+  });
+
+  it("counts a view and a download into today's bucket", () => {
+    const today = new Date().toISOString();
+    const events = [
+      event({ event_type: "view", occurred_at: today }),
+      event({ event_type: "download", occurred_at: today }),
+    ];
+
+    const result = dailyActivity(events, 7);
+    const lastBucket = result[result.length - 1];
+
+    expect(lastBucket?.views).toBe(1);
+    expect(lastBucket?.downloads).toBe(1);
+  });
+
+  it("drops an event older than the requested window", () => {
+    const longAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const result = dailyActivity([event({ occurred_at: longAgo })], 7);
+
+    expect(result.every((day) => day.views === 0)).toBe(true);
+  });
+});
+
+describe("topLinks", () => {
+  const statusOf = () => "active" as const;
+
+  it("ranks links by view count descending", () => {
+    const links = [
+      link({ id: "a", resume_title: "Quiet one" }),
+      link({ id: "b", resume_title: "Popular one" }),
+    ];
+    const events = [
+      event({ link_id: "a", event_type: "view" }),
+      event({ link_id: "b", event_type: "view" }),
+      event({ link_id: "b", event_type: "view" }),
+    ];
+
+    const result = topLinks(links, events, statusOf);
+
+    expect(result[0]?.title).toBe("Popular one");
+    expect(result[0]?.views).toBe(2);
+    expect(result[1]?.title).toBe("Quiet one");
+    expect(result[1]?.views).toBe(1);
+  });
+
+  it("includes a link with zero events rather than omitting it", () => {
+    const links = [link({ id: "a" })];
+
+    const result = topLinks(links, [], statusOf);
+
+    expect(result).toEqual([
+      { linkId: "a", title: "My resume", status: "active", views: 0, downloads: 0 },
+    ]);
+  });
+
+  it("respects the limit", () => {
+    const links = [link({ id: "a" }), link({ id: "b" }), link({ id: "c" })];
+
+    expect(topLinks(links, [], statusOf, 2)).toHaveLength(2);
   });
 });

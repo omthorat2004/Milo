@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { ActivityTrend } from "@/components/app/activity-trend";
 import { AnalyticsPanels } from "@/components/app/analytics-panels";
 import { CopyLinkButton } from "@/components/app/copy-link-button";
 import { EmptyState } from "@/components/app/empty-state";
@@ -76,6 +77,8 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
           </div>
         ))}
       </dl>
+
+      <ActivityTrend events={events} />
 
       <AnalyticsPanels events={events} />
 
