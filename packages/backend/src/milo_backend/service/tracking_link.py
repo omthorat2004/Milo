@@ -28,6 +28,14 @@ MAX_SLUG_ATTEMPTS = 5
 
 RETRYABLE_STATUS_CODES = frozenset({500, 502, 503, 504})
 
+# A tracking link is rendered inline, under Milo's own origin, by whoever
+# opens it. Proxying back whatever content type a user-supplied URL happens
+# to serve, HTML with a <script> tag included, would let anyone turn a
+# tracking link into stored XSS served from Milo's domain. PDF is the only
+# format the product promises ("a candidate hosts their resume PDF"), so it
+# is the only one allowed through, regardless of what the source host sends.
+ALLOWED_CONTENT_TYPES = frozenset({"application/pdf"})
+
 
 @dataclass(frozen=True)
 class ResolvedDocument:
@@ -238,6 +246,7 @@ class LinkService:
             raise ResumeNotFound()
 
         document = await self._fetch_with_retry(resume.source_url)
+        _ensure_allowed_content_type(document.content_type)
 
         try:
             await self.events.create(
@@ -303,6 +312,15 @@ class LinkService:
             "Resume fetch failed after %d attempts: %s", attempts, last_error
         )
         raise ResumeFetchFailed() from last_error
+
+
+def _ensure_allowed_content_type(content_type: str) -> None:
+    media_type = content_type.split(";", 1)[0].strip().lower()
+    if media_type not in ALLOWED_CONTENT_TYPES:
+        raise ResumeFetchFailed(
+            msg="That resume isn't a PDF Milo can display.",
+            details={"content_type": media_type},
+        )
 
 
 def _generate_slug(length: int) -> str:

@@ -16,6 +16,8 @@ INDEX_OPTIONS_CONFLICT = 85
 
 TTL_INDEX = "ttl_verification_last_sent_at"
 
+MAX_UPSERT_ATTEMPTS = 3
+
 
 def _with_id(document: dict[str, Any]) -> dict[str, Any]:
     return {**document, "id": str(document["_id"])}
@@ -125,23 +127,46 @@ class EmailVerificationDAO(BaseDAO):
         now: datetime,
     ) -> EmailVerification:
         identifier = _require_object_id(user_id)
-
-        document = await self.collection.find_one_and_update(
-            {"user_id": identifier},
-            {
-                "$set": {
-                    "code_hash": code_hash,
-                    "status": VerificationStatus.PENDING.value,
-                    "attempts": 0,
-                    "last_sent_at": now,
-                    "verified_at": None,
-                },
-                "$setOnInsert": {"created_at": now},
+        update = {
+            "$set": {
+                "code_hash": code_hash,
+                "status": VerificationStatus.PENDING.value,
+                "attempts": 0,
+                "last_sent_at": now,
+                "verified_at": None,
             },
-            upsert=True,
-            return_document=ReturnDocument.AFTER,
+            "$setOnInsert": {"created_at": now},
+        }
+
+        # Bounded loop, not a single fallback: two overlapping register calls for the
+        # same email can race on the unique `user_id` index (one upsert's insert wins,
+        # the other gets DuplicateKeyError). The natural fix, retry as a plain update,
+        # since the winner's row now exists, can itself still find nothing in a tighter
+        # 3-way race or an odd visibility window, so this keeps retrying either way
+        # rather than ever handing `None` to `_as_verification`.
+        for _ in range(MAX_UPSERT_ATTEMPTS):
+            try:
+                document = await self.collection.find_one_and_update(
+                    {"user_id": identifier},
+                    update,
+                    upsert=True,
+                    return_document=ReturnDocument.AFTER,
+                )
+            except DuplicateKeyError:
+                document = await self.collection.find_one_and_update(
+                    {"user_id": identifier},
+                    update,
+                    upsert=False,
+                    return_document=ReturnDocument.AFTER,
+                )
+
+            if document is not None:
+                return _as_verification(document)
+
+        raise RuntimeError(
+            f"Could not upsert email_verifications for user {user_id!r} "
+            f"after {MAX_UPSERT_ATTEMPTS} attempts."
         )
-        return _as_verification(document)
 
     async def get_by_user_id(self, user_id: str) -> EmailVerification | None:
         identifier = _object_id(user_id)

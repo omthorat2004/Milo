@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = False
     smtp_timeout_seconds: int = Field(default=10, ge=1, le=120)
 
-    email_delivery: EmailDelivery | None = None
+    email_delivery: EmailDelivery = EmailDelivery.SMTP
     email_from_address: EmailStr = "no-reply@milo.app"
     email_from_name: str = "Milo"
 
