@@ -6,6 +6,11 @@ function makeQueryClient(): QueryClient {
     defaultOptions: {
       queries: {
         staleTime: 60 * 1000,
+        // Default is true: every query older than staleTime refetches the moment the
+        // window regains focus, so switching tabs and back refetches links/events/auth
+        // all at once. Reads as "the app refreshing" for a dashboard that doesn't need
+        // up-to-the-second freshness on refocus.
+        refetchOnWindowFocus: false,
       },
       dehydrate: {
         shouldDehydrateQuery: (query) =>

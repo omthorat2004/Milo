@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
@@ -9,7 +10,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { useRevokeLinkMutation, useUpdateLinkExpiryMutation } from "@/hooks/use-link-mutations";
-import { useLinkQuery } from "@/hooks/use-link-queries";
+import { useLinkQuery, useResumeLinksQuery } from "@/hooks/use-link-queries";
 import { useUpdateResumeMutation } from "@/hooks/use-resume-mutations";
 import { getLinkErrorMessage, linkStatus, type TrackingLink } from "@/lib/links.api";
 import { getResumeErrorMessage } from "@/lib/resumes.api";
@@ -109,17 +110,49 @@ function ReadOnlyResume({ link }: { link: TrackingLink }) {
   return (
     <section className="mt-6 max-w-lg space-y-4 rounded-card border border-surface-border bg-surface/60 p-5 text-sm">
       <Row label="Title">{link.resume_title}</Row>
-      <Row label="Resume URL">
-        <a
-          href={link.resume_source_url}
-          target="_blank"
-          rel="noreferrer"
-          className="truncate text-signal-400 hover:underline"
-        >
-          {link.resume_source_url}
-        </a>
+      <Row label="Resume">
+        <OpenResumeButton url={link.resume_source_url} />
       </Row>
     </section>
+  );
+}
+
+/** A resume can back more than one tracking link (one per job application, for
+ * example). Editing the title or URL here changes the shared Resume row, which
+ * would otherwise silently affect every sibling link too. */
+function SiblingLinksNotice({ link }: { link: TrackingLink }) {
+  const siblingLinksQuery = useResumeLinksQuery(link.resume_id);
+  const siblingCount = (siblingLinksQuery.data ?? []).filter(
+    (sibling) => sibling.id !== link.id,
+  ).length;
+
+  if (siblingCount === 0) return null;
+
+  return (
+    <p
+      role="status"
+      className="rounded-lg border border-signal-400/25 bg-signal-400/5 px-4 py-3 text-xs text-foreground-muted"
+    >
+      This resume is also used by {siblingCount} other tracking link
+      {siblingCount === 1 ? "" : "s"}. Changing the title or URL here updates all of them.
+    </p>
+  );
+}
+
+/** A long URL truncated mid-string (common with Drive/Notion share links) reads as
+ * unusable noise, not useful information. A button that opens it is the actual thing
+ * someone wants here. */
+function OpenResumeButton({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1.5 rounded-full border border-surface-border bg-surface px-3 py-1.5 text-xs text-foreground-muted transition-colors hover:text-foreground"
+    >
+      <ExternalLink className="size-3.5" aria-hidden="true" />
+      Open resume
+    </a>
   );
 }
 
@@ -137,15 +170,8 @@ function ResumeEditor({ link }: { link: TrackingLink }) {
     return (
       <section className="mt-6 max-w-lg space-y-4 rounded-card border border-surface-border bg-surface/60 p-5 text-sm">
         <Row label="Title">{link.resume_title}</Row>
-        <Row label="Resume URL">
-          <a
-            href={link.resume_source_url}
-            target="_blank"
-            rel="noreferrer"
-            className="truncate text-signal-400 hover:underline"
-          >
-            {link.resume_source_url}
-          </a>
+        <Row label="Resume">
+          <OpenResumeButton url={link.resume_source_url} />
         </Row>
         <Button
           type="button"
@@ -228,6 +254,8 @@ function ResumeEditor({ link }: { link: TrackingLink }) {
           )}
         />
       </div>
+
+      <SiblingLinksNotice link={link} />
 
       <div className="flex items-center gap-3">
         <Button type="submit" size="sm" disabled={updateResume.isPending}>
