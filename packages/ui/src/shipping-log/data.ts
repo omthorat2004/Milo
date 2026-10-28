@@ -10,6 +10,14 @@ export type ShipEntry = {
 
 export const shippingLog: readonly ShipEntry[] = [
   {
+    date: "2026-10-28",
+    title: "A real download button, and a warning before an edit touches more than one link",
+    description:
+      "The resume viewer gets a visible download button next to the inline view, pointing at the same /l/:slug route with ?download=true, which the backend already turned into a Content-Disposition: attachment response and a DOWNLOAD event instead of a VIEW one. The viewer also now reports device category, browser and OS on that same request, the three allowed signals that had a backend column but nothing sending them from this page. On the settings side, editing a resume's title or URL now shows a notice when other tracking links share that resume, since the row is shared and the edit would otherwise silently change every sibling link with no warning; the raw, truncated resume URL is also replaced with an \"Open resume\" button.",
+    tags: ["Frontend", "Analytics"],
+    status: "shipped",
+  },
+  {
     date: "2026-10-27",
     title: "Dashboards gain device, browser, trend, and top-link panels",
     description:
@@ -166,8 +174,7 @@ export type PlannedEntry = {
 export const upcomingWork: readonly PlannedEntry[] = [
   {
     title: "The viewer itself",
-    description:
-      "PDF.js rendering with page navigation, zoom and fullscreen, plus the download flow that records the event before handing the file over.",
+    description: "PDF.js rendering with page navigation, zoom and fullscreen.",
     when: "soon",
     tags: ["Frontend", "PDF"],
   },
