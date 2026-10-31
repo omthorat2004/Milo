@@ -10,6 +10,22 @@ export type ShipEntry = {
 
 export const shippingLog: readonly ShipEntry[] = [
   {
+    date: "2026-10-30",
+    title: "The resume viewer renders its own PDF, instead of trusting the browser's",
+    description:
+      "The /l/:slug page handed the fetched PDF straight to the browser's native viewer, an iframe pointed at the raw bytes. That viewer ships its own download/print controls, which save whatever's already loaded in the viewport without ever hitting /l/{slug}?download=true, so a click there was never counted as a tracked download event. Replaced by a canvas renderer built on pdfjs-dist: no native browser chrome, so Milo's own Download button (already wired to the tracked endpoint) is the only way to save the file. Page navigation and zoom are new controls this needed, and the dwell beacon now reports the page actually open instead of a hardcoded 1, the per-page tracking this feature always lacked for want of an in-browser renderer. A canvas has no DOM, so a link baked into the PDF (LinkedIn, GitHub, mailto:) isn't clickable on its own the way it was in a native viewer; restored by overlaying a transparent <a> per Link annotation, positioned from pdf.js's own annotation rects.",
+    tags: ["Frontend", "PDF"],
+    status: "shipped",
+  },
+  {
+    date: "2026-10-30",
+    title: "Resume URLs get checked for a real PDF, not just a safe address",
+    description:
+      "Creating or editing a resume ran the URL through the SSRF guard and stopped there; it never fetched the thing, so a Google Drive /view page or a login wall was accepted at submission and only failed later, for whoever opened a tracking link. Both POST /resumes and PATCH /resumes/{id} now fetch the URL and run the same check the tracking-link resolver already applied: the body's own %PDF magic bytes are required, never a declared Content-Type alone, since a host claiming application/pdf while actually serving HTML with an inline script tag is exactly the stored-XSS path this closes. (Some hosts, Google Drive's own direct-download endpoint among them, serve a real PDF as application/octet-stream; that's accepted only together with the magic bytes, never on the declared type by itself.) A Google Drive share link in the exact form Drive's own Share button produces is also rewritten to its direct-download form before validation, so a candidate doesn't have to hand-edit it. Separately, the share_url returned from POST /resumes/{id}/links was built from the API's own origin, so a copied tracking link opened the raw PDF in the browser's native viewer instead of Milo's page with its tracked download button; that's now a dedicated FRONTEND_PUBLIC_BASE_URL setting, split from the API's own origin.",
+    tags: ["Backend", "Security"],
+    status: "shipped",
+  },
+  {
     date: "2026-10-28",
     title: "A real download button, and a warning before an edit touches more than one link",
     description:
@@ -172,12 +188,6 @@ export type PlannedEntry = {
 };
 
 export const upcomingWork: readonly PlannedEntry[] = [
-  {
-    title: "The viewer itself",
-    description: "PDF.js rendering with page navigation, zoom and fullscreen.",
-    when: "soon",
-    tags: ["Frontend", "PDF"],
-  },
   {
     title: "Event pipeline and dashboard",
     description:
