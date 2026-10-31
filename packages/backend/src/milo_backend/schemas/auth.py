@@ -81,6 +81,16 @@ class VerificationStatusRequest(BaseModel):
     email: NormalisedEmail
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: NormalisedEmail
+
+
+class ResetPasswordRequest(BaseModel):
+    email: NormalisedEmail
+    code: OtpCode
+    new_password: Password
+
+
 class AuthUser(BaseModel):
     id: str
     name: str
@@ -105,3 +115,10 @@ class VerificationPendingResponse(BaseModel):
     expires_in_seconds: int
     resend_after_seconds: int
     msg: str = "We sent you a verification code."
+
+
+class ForgotPasswordResponse(BaseModel):
+    """Deliberately constant, no email echo, no timers: anything that varied
+    by outcome would tell a caller whether that address has an account."""
+
+    msg: str = "If an account exists for that email, we sent a password reset code."

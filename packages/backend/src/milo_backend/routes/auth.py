@@ -18,8 +18,11 @@ from milo_backend.model.user import User
 from milo_backend.schemas.auth import (
     AuthResponse,
     AuthUser,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     LoginRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     StartVerificationRequest,
     VerificationPendingResponse,
     VerificationState,
@@ -110,6 +113,37 @@ async def login(
     settings: SettingsDep,
 ) -> AuthResponse:
     user, tokens = await service.login(email=payload.email, password=payload.password)
+    _authenticate(response, tokens=tokens, settings=settings)
+    return AuthResponse(user=_public(user))
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+@limiter.limit(lambda: get_settings().rate_limit_forgot_password)
+async def forgot_password(
+    request: Request,
+    response: Response,
+    payload: ForgotPasswordRequest,
+    service: AuthServiceDep,
+) -> ForgotPasswordResponse:
+    """Always 200 with the same body, whether or not that email has an
+    account, see AuthService.request_password_reset and
+    ForgotPasswordResponse for why."""
+    await service.request_password_reset(email=payload.email)
+    return ForgotPasswordResponse()
+
+
+@router.post("/reset-password", response_model=AuthResponse)
+@limiter.limit(lambda: get_settings().rate_limit_reset_password)
+async def reset_password(
+    request: Request,
+    response: Response,
+    payload: ResetPasswordRequest,
+    service: AuthServiceDep,
+    settings: SettingsDep,
+) -> AuthResponse:
+    user, tokens = await service.confirm_password_reset(
+        email=payload.email, code=payload.code, new_password=payload.new_password
+    )
     _authenticate(response, tokens=tokens, settings=settings)
     return AuthResponse(user=_public(user))
 

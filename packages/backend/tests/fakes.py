@@ -12,6 +12,7 @@ from typing import Any
 
 from milo_backend.model.analytics_event import AnalyticsEvent, EventType
 from milo_backend.model.email_verification import EmailVerification, VerificationStatus
+from milo_backend.model.password_reset import PasswordReset
 from milo_backend.model.resume import Resume
 from milo_backend.model.tracking_link import TrackingLink
 from milo_backend.model.user import User
@@ -67,6 +68,15 @@ class FakeUserDAO:
                 update={"last_login_at": now, "updated_at": now}
             )
 
+    async def update_password(
+        self, user_id: str, *, password_hash: str, now: datetime
+    ) -> None:
+        user = self._by_id.get(user_id)
+        if user is not None:
+            self._by_id[user_id] = user.model_copy(
+                update={"password_hash": password_hash, "updated_at": now}
+            )
+
 
 class FakeEmailVerificationDAO:
     def __init__(self) -> None:
@@ -104,6 +114,41 @@ class FakeEmailVerificationDAO:
             self._by_user[user_id] = record.model_copy(
                 update={"status": VerificationStatus.VERIFIED, "verified_at": now}
             )
+
+
+class FakePasswordResetDAO:
+    def __init__(self) -> None:
+        self._by_user: dict[str, PasswordReset] = {}
+
+    async def upsert_pending(
+        self, *, user_id: str, code_hash: str, now: datetime
+    ) -> PasswordReset:
+        existing = self._by_user.get(user_id)
+        record = PasswordReset(
+            id=existing.id if existing else _new_id(),
+            user_id=user_id,
+            code_hash=code_hash,
+            attempts=0,
+            created_at=existing.created_at if existing else now,
+            last_sent_at=now,
+            used_at=None,
+        )
+        self._by_user[user_id] = record
+        return record
+
+    async def get_by_user_id(self, user_id: str) -> PasswordReset | None:
+        return self._by_user.get(user_id)
+
+    async def increment_attempts(self, user_id: str) -> int:
+        record = self._by_user[user_id]
+        record = record.model_copy(update={"attempts": record.attempts + 1})
+        self._by_user[user_id] = record
+        return record.attempts
+
+    async def mark_used(self, user_id: str, *, now: datetime) -> None:
+        record = self._by_user.get(user_id)
+        if record is not None:
+            self._by_user[user_id] = record.model_copy(update={"used_at": now})
 
 
 class FakeResumeDAO:
@@ -244,6 +289,29 @@ class FakeAnalyticsEventDAO:
         )
         self._events.append(event)
         return event
+
+    async def update_dwell(
+        self,
+        *,
+        visit_id: str,
+        link_id: str,
+        page_number: int | None,
+        dwell_seconds: float,
+    ) -> bool:
+        for index, event in enumerate(self._events):
+            if (
+                event.visit_id == visit_id
+                and event.link_id == link_id
+                and event.event_type == EventType.VIEW
+            ):
+                self._events[index] = event.model_copy(
+                    update={
+                        "page_number": page_number,
+                        "dwell_time_seconds": dwell_seconds,
+                    }
+                )
+                return True
+        return False
 
     async def list_by_link(
         self, link_id: str, *, limit: int = 500

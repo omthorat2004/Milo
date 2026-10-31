@@ -52,6 +52,8 @@ All request/response fields are defined in `schemas/auth.py`; this table is the 
 | `POST /auth/verify-email/status` | no | `{email}` | 200 `VerificationStatusResponse` (`status: none\|pending\|verified`) |, (always 200; "no pending verification" is a normal state, not an error) |
 | `POST /auth/verify-otp` | no | `{email, code}` | 200 `AuthResponse`, sets auth cookies | `verification_not_found`, `email_already_verified`, `verification_code_expired`, `verification_code_invalid` (`details.attempts_remaining`), `too_many_verification_attempts` |
 | `POST /auth/login` | no | `{email, password}` | 200 `AuthResponse`, sets auth cookies | `invalid_credentials`, `email_not_verified` (`details.email`) |
+| `POST /auth/forgot-password` | no | `{email}` | 200 `ForgotPasswordResponse` (fixed `msg`, no email echo, no timers) |, (always 200 regardless of whether the email has an account, see below) |
+| `POST /auth/reset-password` | no | `{email, code, new_password}` | 200 `AuthResponse`, sets auth cookies | `password_reset_invalid` (unknown email, no pending reset, expired, or wrong code, all collapsed into one response on purpose), `too_many_password_reset_attempts`, `weak_password` |
 | `POST /auth/refresh` | refresh cookie | N/A | 200 `AuthResponse`, rotates auth cookies | `invalid_token` (missing/expired/wrong-type cookie) |
 | `POST /auth/logout` | no | N/A | 204, clears auth cookies | N/A |
 | `GET /auth/me` | access cookie | N/A | 200 `AuthResponse` | `invalid_token` |
@@ -59,16 +61,29 @@ All request/response fields are defined in `schemas/auth.py`; this table is the 
 `AuthResponse` is always `{"user": {id, name, email, email_verified}}`, the password hash and any
 internal fields never leave `model.User`.
 
+`POST /auth/forgot-password` is deliberately the one auth endpoint with a response that never
+varies: no email echo, no expiry/resend timers, 200 whether or not the address has an account,
+whether the account is verified, and whether a reset email was actually sent. `GET
+/auth/verify-email/status` leaks exactly this (known vs. unknown address gets a different
+`status`), a known, accepted gap for a less sensitive flow; forgot-password is written to not
+repeat it, since this is specifically the endpoint most likely to be hit for account enumeration.
+`POST /auth/reset-password` follows the same principle: unknown email, no pending reset, an expired
+code, and a wrong code are all reported as the same `password_reset_invalid`, a distinct "no
+account" response would let this endpoint be used to test which emails have accounts instead.
+`PasswordReset` rows live in their own `password_resets` collection (`dao/password_reset.py`),
+mirroring `email_verifications`' shape, not reused, so a pending email verification and a pending
+password reset for the same user never collide on one row.
+
 ## `/resumes` and tracking-link endpoint reference
 
 All request/response fields are defined in `schemas/resume.py` and `schemas/tracking_link.py`.
 
 | Method & path | Auth required | Request | Success | Notable errors |
 | --- | --- | --- | --- | --- |
-| `POST /resumes` | yes (cookie) | `{title, source_url}` | 201 `ResumeResponse` | `invalid_resume_url` (fails the SSRF guard, or exceeds `resume_url_max_length`) |
+| `POST /resumes` | yes (cookie) | `{title, source_url}` | 201 `ResumeResponse` | `invalid_resume_url` (fails the SSRF guard, exceeds `resume_url_max_length`, or the URL doesn't serve `application/pdf` when fetched) |
 | `GET /resumes` | yes | N/A | 200 `list[ResumeResponse]` | N/A |
 | `GET /resumes/{resume_id}` | yes | N/A | 200 `ResumeResponse` | `resume_not_found` |
-| `PATCH /resumes/{resume_id}` | yes | `{title?, source_url?}`, at least one required | 200 `ResumeResponse` | `resume_not_found`, `invalid_resume_url` (if `source_url` is given and fails the SSRF guard) |
+| `PATCH /resumes/{resume_id}` | yes | `{title?, source_url?}`, at least one required | 200 `ResumeResponse` | `resume_not_found`, `invalid_resume_url` (if `source_url` is given and fails the SSRF guard or the PDF check above) |
 | `POST /resumes/{resume_id}/links` | yes | `{expires_in_days?}` | 201 `TrackingLinkResponse` | `resume_not_found` (not yours or doesn't exist) |
 | `GET /resumes/{resume_id}/links` | yes | N/A | 200 `list[TrackingLinkResponse]` | `resume_not_found` |
 | `GET /links` | yes | N/A | 200 `list[TrackingLinkResponse]`, every link across every resume you own | N/A |
@@ -79,6 +94,17 @@ All request/response fields are defined in `schemas/resume.py` and `schemas/trac
 | `DELETE /links/{link_id}` | yes | N/A | 204 |, (silently no-ops if the link isn't yours, same as revoking something already gone) |
 | `GET /l/{slug}` | no | query: `sid`, `device_category`, `browser`, `os`, `utm_source`, `utm_medium`, `utm_campaign`, `page_number`, `download` | 200, streams the resume document with the original `Content-Type` | `tracking_link_not_found`, `tracking_link_expired` (checked *before* any fetch, so an expired link never triggers a network call or a retry), `tracking_link_revoked`, `resume_fetch_failed` (after exhausting `resume_fetch_max_retries` retries on a transient failure, or immediately on a non-retryable 4xx/oversized body) |
 | `POST /l/{slug}/dwell` | no | `{session_id?, page_number?, dwell_seconds}` | 204, always, even for an unknown/expired/revoked slug |, (best-effort; fed by `navigator.sendBeacon`, which never reads the response) |
+
+`POST /resumes` and `PATCH /resumes/{resume_id}` (when `source_url` changes) now fetch the URL at
+submission time and reject it unless the response's `Content-Type` is `application/pdf`, the same
+check `GET /l/{slug}` applies when a tracking link is opened (`core/_http_client.py::
+ensure_allowed_content_type`, shared by both). This closes the gap where a bad link (a Google Drive
+`/view` page, a login wall, a 404) would be accepted at creation and only fail later for whoever
+opened a tracking link. A Google Drive share URL (`https://drive.google.com/file/d/{id}/view`,
+whatever `usp=` suffix Drive appends) is also rewritten to its direct-download form
+(`https://drive.google.com/uc?export=download&id={id}`) before validation and storage
+(`service/resume.py::_normalize_source_url`), so the plain link Drive's own "Share" button produces
+works without the candidate hand-editing it.
 
 `GET /l/{slug}` is the public share link: opening it validates expiry/revocation first, then fetches
 the candidate's externally-hosted document (with retry on transient 5xx/transport errors, see
@@ -120,6 +146,8 @@ Backed by `slowapi` (`core/_rate_limit.py`), wired in two layers:
 | `POST /auth/verify-email/status` | `rate_limit_verification_status` | `30/minute` | Polled by the frontend while a visitor waits for their code, looser than the others since it's read-only. |
 | `POST /auth/verify-otp` | `rate_limit_verify_otp` | `10/minute` | Caps brute-forcing a short numeric code; `AuthService` also tracks `otp_max_attempts` independently (see [backend-architecture.md](./backend-architecture.md)), two separate defenses, not one. |
 | `POST /auth/login` | `rate_limit_login` | `10/minute` | Caps credential stuffing / password guessing. |
+| `POST /auth/forgot-password` | `rate_limit_forgot_password` | `5/hour` | Same shape as register/resend-otp: gates an email send and caps using the endpoint to probe which addresses have accounts via response timing. |
+| `POST /auth/reset-password` | `rate_limit_reset_password` | `10/minute` | Caps brute-forcing the reset code, same shape as `rate_limit_verify_otp`; `AuthService` also tracks `otp_max_attempts` independently. |
 | `POST /auth/refresh` | `rate_limit_refresh` | `30/minute` | Not credential-guessable (requires a valid refresh cookie already), but still capped so a compromised/buggy client can't hammer token rotation. |
 | `POST /auth/logout` | `rate_limit_logout` | `20/minute` | Low-risk, but still capped rather than left purely on the app-wide default, consistent with "every mutating route decides its limit on purpose" rather than by omission. |
 | `GET /auth/me` |, (app-wide default only) | `200/minute` | Deliberately not given a tighter override: it's read-only, called on every app mount/tab, and the one route where an aggressive limit would most likely lock out a legitimate visitor rather than an attacker. |

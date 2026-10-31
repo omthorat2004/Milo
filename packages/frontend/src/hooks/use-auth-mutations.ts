@@ -4,8 +4,10 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 
 import { sessionQueryKey } from "@/hooks/use-auth-session";
 import {
+  forgotPassword,
   login,
   register,
+  resetPassword,
   startVerification,
   verificationStatus,
   verifyOtp,
@@ -13,6 +15,7 @@ import {
   type EmailInput,
   type LoginInput,
   type RegisterInput,
+  type ResetPasswordInput,
   type VerificationPending,
   type VerifyOtpInput,
 } from "@/lib/auth.api";
@@ -78,6 +81,33 @@ export function useResendOtpMutation(): UseMutationResult<
 > {
   return useMutation({
     mutationFn: startVerification,
+  });
+}
+
+/** No session change, the backend's response never reveals whether the
+ * email has an account (see forgotPassword's own comment). */
+export function useForgotPasswordMutation(): UseMutationResult<
+  { msg: string },
+  unknown,
+  EmailInput
+> {
+  return useMutation({
+    mutationFn: forgotPassword,
+  });
+}
+
+/** Same session-adoption as login/verify-otp: a successful reset logs the
+ * user in immediately rather than sending them to a separate login step. */
+export function useResetPasswordMutation(): UseMutationResult<
+  AuthUser,
+  unknown,
+  ResetPasswordInput
+> {
+  const adoptSession = useAdoptSession();
+
+  return useMutation({
+    mutationFn: resetPassword,
+    onSuccess: adoptSession,
   });
 }
 

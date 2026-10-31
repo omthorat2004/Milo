@@ -1,8 +1,9 @@
 "use client";
 
 import { isAxiosError } from "axios";
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useLoginMutation, useRegisterMutation } from "@/hooks/use-auth-mutations";
@@ -92,11 +93,10 @@ export function AuthForm({ mode, className }: Props) {
         required
       />
 
-      <Field
+      <PasswordField
         id={passwordId}
         label="Password"
         name="password"
-        type="password"
         autoComplete={mode === "register" ? "new-password" : "current-password"}
         required
         minLength={mode === "register" ? 12 : undefined}
@@ -158,6 +158,46 @@ function Field({ id, label, hint, ...props }: FieldProps) {
           "transition-colors focus:border-signal-400/60 focus:outline-none",
         )}
       />
+      {hint ? <p className="mt-1.5 text-xs text-foreground-muted">{hint}</p> : null}
+    </div>
+  );
+}
+
+type PasswordFieldProps = Omit<FieldProps, "type">;
+
+export function PasswordField({ id, label, hint, ...props }: PasswordFieldProps) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm text-foreground-muted">
+        {label}
+      </label>
+      <div className="relative mt-2">
+        <input
+          id={id}
+          {...props}
+          type={visible ? "text" : "password"}
+          className={cn(
+            "h-11 w-full rounded-lg border border-surface-border bg-surface px-4 pr-11 text-base",
+            "text-foreground placeholder:text-foreground-muted",
+            "transition-colors focus:border-signal-400/60 focus:outline-none",
+          )}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((value) => !value)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          aria-pressed={visible}
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-foreground-muted transition-colors hover:text-foreground"
+        >
+          {visible ? (
+            <EyeOff className="size-4" aria-hidden="true" />
+          ) : (
+            <Eye className="size-4" aria-hidden="true" />
+          )}
+        </button>
+      </div>
       {hint ? <p className="mt-1.5 text-xs text-foreground-muted">{hint}</p> : null}
     </div>
   );

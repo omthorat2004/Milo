@@ -28,6 +28,7 @@ export type RegisterInput = { name: string; email: string; password: string };
 export type LoginInput = { email: string; password: string };
 export type EmailInput = { email: string };
 export type VerifyOtpInput = { email: string; code: string };
+export type ResetPasswordInput = { email: string; code: string; newPassword: string };
 
 type AuthEnvelope = { user: AuthUser };
 
@@ -67,6 +68,27 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<AuthUser> {
 
 export async function login(input: LoginInput): Promise<AuthUser> {
   const { data } = await api.post<AuthEnvelope>("/auth/login", input, { ignoreRefresh: true });
+  return data.user;
+}
+
+/**
+ * Always resolves with the same message, whether or not that email has an
+ * account, the backend's response is deliberately constant (see
+ * ForgotPasswordResponse) so there's nothing here to branch on.
+ */
+export async function forgotPassword(input: EmailInput): Promise<{ msg: string }> {
+  const { data } = await api.post<{ msg: string }>("/auth/forgot-password", input, {
+    ignoreRefresh: true,
+  });
+  return data;
+}
+
+export async function resetPassword(input: ResetPasswordInput): Promise<AuthUser> {
+  const { data } = await api.post<AuthEnvelope>(
+    "/auth/reset-password",
+    { email: input.email, code: input.code, new_password: input.newPassword },
+    { ignoreRefresh: true },
+  );
   return data.user;
 }
 

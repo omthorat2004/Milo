@@ -75,3 +75,21 @@ class InvalidToken(AppException):
     status_code = HTTPStatus.UNAUTHORIZED
     code = "invalid_token"
     msg = "Your session has expired. Log in again."
+
+
+class PasswordResetInvalid(AppException):
+    """Covers every reason a reset code could fail to redeem: unknown email,
+    no pending reset, expired, or wrong code. Deliberately one exception for
+    all of these, a distinct "no account" response would let
+    /auth/reset-password be used to test which emails have accounts, the
+    same leak /auth/forgot-password is written to avoid."""
+
+    status_code = HTTPStatus.BAD_REQUEST
+    code = "password_reset_invalid"
+    msg = "That code is not correct or has expired."
+
+
+class TooManyPasswordResetAttempts(AppException):
+    status_code = HTTPStatus.TOO_MANY_REQUESTS
+    code = "too_many_password_reset_attempts"
+    msg = "Too many incorrect codes. Request a new one."

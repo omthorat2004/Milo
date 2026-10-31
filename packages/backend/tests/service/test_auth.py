@@ -8,14 +8,16 @@ from milo_backend.core import Settings
 from milo_backend.exception.auth import (
     EmailNotVerified,
     InvalidCredentials,
+    PasswordResetInvalid,
     ResendTooSoon,
+    TooManyPasswordResetAttempts,
     TooManyVerificationAttempts,
     UserAlreadyExists,
     VerificationCodeInvalid,
     WeakPassword,
 )
 from milo_backend.service.auth import AuthService
-from tests.fakes import FakeEmailVerificationDAO, FakeUserDAO
+from tests.fakes import FakeEmailVerificationDAO, FakePasswordResetDAO, FakeUserDAO
 
 
 @pytest.fixture
@@ -33,8 +35,20 @@ def settings() -> Settings:
 @pytest.fixture
 def service(settings: Settings) -> AuthService:
     return AuthService(
-        users=FakeUserDAO(), verifications=FakeEmailVerificationDAO(), settings=settings
+        users=FakeUserDAO(),
+        verifications=FakeEmailVerificationDAO(),
+        password_resets=FakePasswordResetDAO(),
+        settings=settings,
     )
+
+
+async def _registered_and_verified(
+    service: AuthService, *, email: str = "ada@example.com"
+) -> None:
+    await service.register(name="Ada", email=email, password="supersecret")
+    user = await service.users.get_by_email(email)
+    assert user is not None
+    await service.users.mark_email_verified(user.id, now=datetime.now(UTC))
 
 
 async def test_register_issues_challenge_and_normalises_email(
@@ -142,3 +156,126 @@ async def test_verify_otp_success_marks_verified_and_issues_tokens(
 
     assert user.email_verified is True
     assert tokens.access_token
+
+
+async def test_request_password_reset_unknown_email_is_silent_noop(
+    service: AuthService,
+) -> None:
+    """No exception, no distinguishable response: the whole point is that a
+    caller cannot tell this apart from a known email that just got an
+    email sent to it."""
+    await service.request_password_reset(email="nobody@example.com")
+
+
+async def test_request_password_reset_unverified_user_is_silent_noop(
+    service: AuthService,
+) -> None:
+    await service.register(name="Ada", email="ada@example.com", password="supersecret")
+
+    await service.request_password_reset(email="ada@example.com")
+
+    user = await service.users.get_by_email("ada@example.com")
+    assert user is not None
+    assert await service.password_resets.get_by_user_id(user.id) is None
+
+
+async def test_request_password_reset_issues_code_for_verified_user(
+    service: AuthService,
+) -> None:
+    await _registered_and_verified(service)
+
+    await service.request_password_reset(email="ada@example.com")
+
+    user = await service.users.get_by_email("ada@example.com")
+    assert user is not None
+    record = await service.password_resets.get_by_user_id(user.id)
+    assert record is not None
+
+
+async def test_confirm_password_reset_unknown_email_raises_invalid(
+    service: AuthService,
+) -> None:
+    with pytest.raises(PasswordResetInvalid):
+        await service.confirm_password_reset(
+            email="nobody@example.com", code="123456", new_password="newsupersecret"
+        )
+
+
+async def test_confirm_password_reset_no_pending_reset_raises_invalid(
+    service: AuthService,
+) -> None:
+    await _registered_and_verified(service)
+
+    with pytest.raises(PasswordResetInvalid):
+        await service.confirm_password_reset(
+            email="ada@example.com", code="123456", new_password="newsupersecret"
+        )
+
+
+async def test_confirm_password_reset_wrong_code_raises_invalid(
+    service: AuthService,
+) -> None:
+    await _registered_and_verified(service)
+    await service.request_password_reset(email="ada@example.com")
+
+    with pytest.raises(PasswordResetInvalid):
+        await service.confirm_password_reset(
+            email="ada@example.com", code="000000", new_password="newsupersecret"
+        )
+
+
+async def test_confirm_password_reset_locks_out_after_max_attempts(
+    service: AuthService,
+) -> None:
+    await _registered_and_verified(service)
+    await service.request_password_reset(email="ada@example.com")
+
+    for _ in range(2):
+        with pytest.raises(PasswordResetInvalid):
+            await service.confirm_password_reset(
+                email="ada@example.com", code="000000", new_password="newsupersecret"
+            )
+    with pytest.raises(TooManyPasswordResetAttempts):
+        await service.confirm_password_reset(
+            email="ada@example.com", code="000000", new_password="newsupersecret"
+        )
+
+
+async def test_confirm_password_reset_success_changes_password_and_issues_tokens(
+    service: AuthService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "milo_backend.service.auth.generate_otp", lambda *, settings: "123456"
+    )
+    await _registered_and_verified(service)
+    await service.request_password_reset(email="ada@example.com")
+
+    user, tokens = await service.confirm_password_reset(
+        email="ada@example.com", code="123456", new_password="newsupersecret"
+    )
+
+    assert tokens.access_token
+    assert tokens.refresh_token
+
+    with pytest.raises(InvalidCredentials):
+        await service.login(email="ada@example.com", password="supersecret")
+
+    logged_in, _ = await service.login(
+        email="ada@example.com", password="newsupersecret"
+    )
+    assert logged_in.id == user.id
+
+
+async def test_confirm_password_reset_rejects_weak_new_password(
+    service: AuthService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "milo_backend.service.auth.generate_otp", lambda *, settings: "123456"
+    )
+    await _registered_and_verified(service)
+    await service.request_password_reset(email="ada@example.com")
+
+    with pytest.raises(WeakPassword):
+        await service.confirm_password_reset(
+            email="ada@example.com", code="123456", new_password="short"
+        )

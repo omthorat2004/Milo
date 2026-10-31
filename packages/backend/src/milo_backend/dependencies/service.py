@@ -7,6 +7,7 @@ from fastapi import Cookie, Depends
 from milo_backend.core import ACCESS_TOKEN_COOKIE, Settings, get_database, get_settings
 from milo_backend.dao.analytics_event import AnalyticsEventDAO
 from milo_backend.dao.auth import EmailVerificationDAO, UserDAO
+from milo_backend.dao.password_reset import PasswordResetDAO
 from milo_backend.dao.resume import ResumeDAO
 from milo_backend.dao.tracking_link import TrackingLinkDAO
 from milo_backend.exception.auth import InvalidToken
@@ -23,6 +24,7 @@ def get_auth_service(settings: SettingsDep) -> AuthService:
     return AuthService(
         users=UserDAO(db),
         verifications=EmailVerificationDAO(db),
+        password_resets=PasswordResetDAO(db),
         settings=settings,
     )
 
@@ -68,6 +70,9 @@ async def ensure_indexes(*, settings: Settings) -> None:
     db = get_database()
     await UserDAO(db).create_indexes()
     await EmailVerificationDAO(db).create_indexes(
+        ttl_seconds=settings.otp_record_ttl_seconds
+    )
+    await PasswordResetDAO(db).create_indexes(
         ttl_seconds=settings.otp_record_ttl_seconds
     )
     await ResumeDAO(db).create_indexes()

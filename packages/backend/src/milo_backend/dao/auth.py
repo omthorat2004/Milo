@@ -95,6 +95,18 @@ class UserDAO(BaseDAO):
             {"$set": {"last_login_at": now, "updated_at": now}},
         )
 
+    async def update_password(
+        self, user_id: str, *, password_hash: str, now: datetime
+    ) -> None:
+        identifier = _object_id(user_id)
+        if identifier is None:
+            return
+
+        await self.collection.update_one(
+            {"_id": identifier},
+            {"$set": {"password_hash": password_hash, "updated_at": now}},
+        )
+
 
 class EmailVerificationDAO(BaseDAO):
     collection_name = "email_verifications"

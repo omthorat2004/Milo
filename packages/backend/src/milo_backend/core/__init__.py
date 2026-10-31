@@ -7,7 +7,12 @@ from milo_backend.core._cookies import (
 )
 from milo_backend.core._database import connect, disconnect, get_client, get_database
 from milo_backend.core._email import send_email
-from milo_backend.core._email_templates import verification_html, verification_text
+from milo_backend.core._email_templates import (
+    password_reset_html,
+    password_reset_text,
+    verification_html,
+    verification_text,
+)
 from milo_backend.core._http_client import (
     FetchedDocument,
     ensure_is_pdf_document,
@@ -61,6 +66,8 @@ __all__ = [
     "hash_password",
     "limiter",
     "password_needs_rehash",
+    "password_reset_html",
+    "password_reset_text",
     "queue_email",
     "send_email",
     "set_auth_cookies",

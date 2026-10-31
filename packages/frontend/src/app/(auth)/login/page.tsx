@@ -13,6 +13,12 @@ export default function LoginPage() {
 
       <AuthForm mode="login" className="mt-8" />
 
+      <p className="mt-3 text-sm text-foreground-muted">
+        <Link href="/forgot-password" className="text-signal-400 hover:text-signal-300">
+          Forgot your password?
+        </Link>
+      </p>
+
       <p className="mt-6 text-sm text-foreground-muted">
         No account yet?{" "}
         <Link href="/register" className="text-signal-400 hover:text-signal-300">

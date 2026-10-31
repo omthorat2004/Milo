@@ -62,3 +62,50 @@ def verification_html(*, name: str, code: str, settings: Settings) -> str:
     </table>
   </body>
 </html>"""
+
+
+def password_reset_text(*, name: str, code: str, settings: Settings) -> str:
+    minutes = settings.otp_expire_minutes
+    return (
+        f"Hi {name},\n\n"
+        f"Your Milo password reset code is {code}.\n"
+        f"It expires in {minutes} minutes.\n\n"
+        "If you did not request this, ignore this email. Your password has not been changed.\n"
+    )
+
+
+def password_reset_html(*, name: str, code: str, settings: Settings) -> str:
+    minutes = settings.otp_expire_minutes
+    safe_name = html.escape(name)
+    spaced_code = " ".join(html.escape(digit) for digit in code)
+
+    return f"""\
+<!doctype html>
+<html>
+  <body style="margin:0;padding:32px 16px;background-color:{_SAND_50};font-family:{_FONT_STACK};color:{_INK_950};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;">
+      <tr>
+        <td style="padding-bottom:28px;">
+          <span style="font-size:20px;font-weight:600;letter-spacing:-0.01em;color:{_INK_950};">Milo</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-size:15px;line-height:1.6;">
+          <p style="margin:0 0 8px;">Hi {safe_name},</p>
+          <p style="margin:0 0 24px;">Here's your password reset code:</p>
+        </td>
+      </tr>
+      <tr>
+        <td align="center" style="padding:24px 0;background-color:#ffffff;border:1px solid {_SAND_200};border-radius:12px;">
+          <span style="font-size:32px;font-weight:700;letter-spacing:8px;color:{_SIGNAL_400};font-family:{_MONO_STACK};">{spaced_code}</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-top:20px;font-size:13px;color:{_SAND_500};line-height:1.6;">
+          <p style="margin:0 0 4px;">This code expires in {minutes} minutes.</p>
+          <p style="margin:0;">Didn't request this? You can safely ignore this email. Your password has not been changed.</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>"""

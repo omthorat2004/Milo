@@ -14,6 +14,8 @@ from milo_backend.core import (
     generate_otp,
     hash_otp,
     hash_password,
+    password_reset_html,
+    password_reset_text,
     queue_email,
     verification_html,
     verification_text,
@@ -21,12 +23,15 @@ from milo_backend.core import (
     verify_password,
 )
 from milo_backend.dao.auth import EmailVerificationDAO, UserDAO
+from milo_backend.dao.password_reset import PasswordResetDAO
 from milo_backend.exception.auth import (
     EmailAlreadyVerified,
     EmailNotVerified,
     InvalidCredentials,
     InvalidToken,
+    PasswordResetInvalid,
     ResendTooSoon,
+    TooManyPasswordResetAttempts,
     TooManyVerificationAttempts,
     UserAlreadyExists,
     UserNotFound,
@@ -36,6 +41,7 @@ from milo_backend.exception.auth import (
     WeakPassword,
 )
 from milo_backend.model.email_verification import EmailVerification, VerificationStatus
+from milo_backend.model.password_reset import PasswordReset
 from milo_backend.model.user import User
 
 logger = logging.getLogger("milo.auth")
@@ -81,10 +87,12 @@ class AuthService:
         *,
         users: UserDAO,
         verifications: EmailVerificationDAO,
+        password_resets: PasswordResetDAO,
         settings: Settings,
     ) -> None:
         self.users = users
         self.verifications = verifications
+        self.password_resets = password_resets
         self.settings = settings
 
     async def register(
@@ -227,6 +235,82 @@ class AuthService:
             attempts_remaining=max(0, self.settings.otp_max_attempts - record.attempts),
         )
 
+    async def request_password_reset(self, *, email: str) -> None:
+        """Always returns None, never raises, regardless of whether the
+        address has an account: the route's response is constant either
+        way, this is what keeps it that way rather than relying on the
+        caller to swallow a UserNotFound. An unverified account is treated
+        the same as no account (there is nothing to log into yet)."""
+        address = _normalise(email)
+        user = await self.users.get_by_email(address)
+        if user is None or not user.email_verified:
+            return
+
+        now = datetime.now(UTC)
+        existing = await self.password_resets.get_by_user_id(user.id)
+        if existing is not None:
+            ready_at = _reset_last_sent_at(existing) + self.settings.otp_resend_cooldown
+            if now < ready_at:
+                # Silently drop rather than raise ResendTooSoon: an error
+                # here would itself be a tell that the account exists.
+                return
+
+        code = generate_otp(settings=self.settings)
+        await self.password_resets.upsert_pending(
+            user_id=user.id,
+            code_hash=hash_otp(code, settings=self.settings),
+            now=now,
+        )
+
+        queue_email(
+            to=user.email,
+            subject=f"{code} is your Milo password reset code",
+            text_body=password_reset_text(
+                name=user.name, code=code, settings=self.settings
+            ),
+            html_body=password_reset_html(
+                name=user.name, code=code, settings=self.settings
+            ),
+        )
+
+        logger.info("Password reset code issued for user %s", user.id)
+
+    async def confirm_password_reset(
+        self, *, email: str, code: str, new_password: str
+    ) -> tuple[User, TokenPair]:
+        address = _normalise(email)
+        now = datetime.now(UTC)
+        self._check_password(new_password)
+
+        user = await self.users.get_by_email(address)
+        if user is None:
+            raise PasswordResetInvalid()
+
+        record = await self.password_resets.get_by_user_id(user.id)
+        if record is None or record.used_at is not None:
+            raise PasswordResetInvalid()
+        if _reset_expires_at(record, settings=self.settings) <= now:
+            raise PasswordResetInvalid()
+        if record.attempts >= self.settings.otp_max_attempts:
+            raise TooManyPasswordResetAttempts()
+
+        if not verify_otp(code, record.code_hash, settings=self.settings):
+            attempts = await self.password_resets.increment_attempts(user.id)
+            if attempts >= self.settings.otp_max_attempts:
+                raise TooManyPasswordResetAttempts()
+            raise PasswordResetInvalid()
+
+        await self.users.update_password(
+            user.id, password_hash=hash_password(new_password), now=now
+        )
+        await self.password_resets.mark_used(user.id, now=now)
+        await self.users.record_login(user.id, now=now)
+
+        updated = user.model_copy(update={"last_login_at": now})
+        logger.info("Password reset for user %s", user.id)
+
+        return updated, self._issue_tokens(updated)
+
     async def _issue_challenge(
         self, user: User, *, now: datetime
     ) -> VerificationChallenge:
@@ -320,6 +404,14 @@ def _expires_at(record: EmailVerification, *, settings: Settings) -> datetime:
 
 
 def _last_sent_at(record: EmailVerification) -> datetime:
+    return _as_utc(record.last_sent_at)
+
+
+def _reset_expires_at(record: PasswordReset, *, settings: Settings) -> datetime:
+    return _reset_last_sent_at(record) + settings.otp_expiry
+
+
+def _reset_last_sent_at(record: PasswordReset) -> datetime:
     return _as_utc(record.last_sent_at)
 
 
