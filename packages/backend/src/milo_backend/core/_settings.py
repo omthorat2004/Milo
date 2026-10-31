@@ -38,7 +38,12 @@ class Settings(BaseSettings):
     )
 
     environment: Environment = Environment.DEVELOPMENT
-    public_base_url: str = "http://localhost:8000"
+    # The frontend's own public origin, where its /l/{slug} page lives (the
+    # one with Milo's own PDF viewer and tracked download button). A share
+    # link must point here, not at the API's own origin: opening the API
+    # URL directly hands the raw PDF bytes to the browser's own PDF viewer,
+    # which ships its own untracked download/print controls.
+    frontend_public_base_url: str = "http://localhost:3001"
 
     mongodb_uri: str = "mongodb://127.0.0.1:27017"
     mongodb_db: str = "milo"
@@ -267,6 +272,11 @@ class Settings(BaseSettings):
             if insecure:
                 raise ValueError(
                     f"cors_origins must use https in production: {insecure}"
+                )
+
+            if self.frontend_public_base_url.startswith("http://"):
+                raise ValueError(
+                    "FRONTEND_PUBLIC_BASE_URL must use https in production."
                 )
 
             if self.email_delivery is not EmailDelivery.SMTP:

@@ -71,7 +71,7 @@ export function LinkForm({ className }: { className?: string }) {
       <Field
         id={urlId}
         label="Resume URL"
-        hint="Wherever the PDF already lives: Google Drive, Dropbox, your own site. Milo stores the URL, not the file."
+        hint="Google Drive works best: it rarely goes down. Any host with a public PDF URL works too (Dropbox, your own site). Milo stores the link, not the file."
         inputProps={{
           value: sourceUrl,
           onChange: (event) => setSourceUrl(event.target.value),

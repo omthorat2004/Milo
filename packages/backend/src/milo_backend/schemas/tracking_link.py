@@ -16,7 +16,7 @@ class UpdateTrackingLinkRequest(BaseModel):
 
 
 class DwellBeaconRequest(BaseModel):
-    session_id: str | None = Field(default=None, max_length=128)
+    visit_id: str = Field(min_length=1, max_length=128)
     page_number: int | None = Field(default=None, ge=1)
     dwell_seconds: float = Field(gt=0, le=24 * 60 * 60)
 

@@ -34,3 +34,8 @@ class AnalyticsEvent(BaseModel):
     utm_campaign: str | None = None
     page_number: int | None = None
     dwell_time_seconds: float | None = None
+    # A per-page-load nonce, not itself an allowed signal, it correlates the
+    # dwell beacon back to the view event it belongs to (see
+    # AnalyticsEventDAO.update_dwell) so a visit is one row, not two. Never
+    # exposed on AnalyticsEventResponse.
+    visit_id: str | None = None

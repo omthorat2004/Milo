@@ -123,6 +123,7 @@ async def resolve_tracking_link(
     utm_campaign: str | None = None,
     page_number: Annotated[int | None, Query(ge=1)] = None,
     download: bool = False,
+    visit_id: str | None = None,
 ) -> Response:
     document = await service.resolve(
         slug=slug,
@@ -136,12 +137,20 @@ async def resolve_tracking_link(
         utm_medium=utm_medium,
         utm_campaign=utm_campaign,
         page_number=page_number,
+        visit_id=visit_id,
     )
 
     disposition = "attachment" if download else "inline"
     return Response(
         content=document.content,
-        media_type=document.content_type,
+        # Always "application/pdf", never the origin's own reported type:
+        # resolve() already confirmed the body is a real PDF regardless of
+        # what header the source host sent (some, Google Drive's
+        # uc?export=download among them, serve a real PDF as
+        # application/octet-stream), and a browser renders octet-stream as a
+        # forced download rather than inline, which is the point of this
+        # endpoint.
+        media_type="application/pdf",
         headers={"Content-Disposition": disposition},
     )
 
@@ -159,7 +168,7 @@ async def record_dwell_beacon(
     client never reads this response: best-effort, always 204."""
     await service.record_dwell(
         slug=slug,
-        session_id=payload.session_id,
+        visit_id=payload.visit_id,
         page_number=payload.page_number,
         dwell_seconds=payload.dwell_seconds,
     )
@@ -170,7 +179,7 @@ def _public(overview: LinkOverview, *, settings: Settings) -> TrackingLinkRespon
     return TrackingLinkResponse(
         id=link.id,
         slug=link.slug,
-        share_url=f"{settings.public_base_url}/l/{link.slug}",
+        share_url=f"{settings.frontend_public_base_url}/l/{link.slug}",
         resume_id=link.resume_id,
         resume_title=overview.resume_title,
         resume_source_url=overview.resume_source_url,

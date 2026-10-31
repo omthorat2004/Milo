@@ -33,6 +33,11 @@ class AnalyticsEventDAO(BaseDAO):
             [("link_id", ASCENDING), ("occurred_at", DESCENDING)],
             name="idx_event_link_occurred_at",
         )
+        await self.collection.create_index(
+            [("visit_id", ASCENDING), ("link_id", ASCENDING)],
+            name="idx_event_visit_link",
+            sparse=True,
+        )
 
     async def create(
         self,
@@ -51,6 +56,7 @@ class AnalyticsEventDAO(BaseDAO):
         utm_campaign: str | None,
         page_number: int | None,
         dwell_time_seconds: float | None,
+        visit_id: str | None = None,
     ) -> AnalyticsEvent:
         document: dict[str, Any] = {
             "link_id": _require_object_id(link_id),
@@ -67,10 +73,38 @@ class AnalyticsEventDAO(BaseDAO):
             "utm_campaign": utm_campaign,
             "page_number": page_number,
             "dwell_time_seconds": dwell_time_seconds,
+            "visit_id": visit_id,
         }
 
         result = await self.collection.insert_one(document)
         return _as_event({**document, "_id": result.inserted_id})
+
+    async def update_dwell(
+        self,
+        *,
+        visit_id: str,
+        link_id: str,
+        page_number: int | None,
+        dwell_seconds: float,
+    ) -> bool:
+        """Attaches dwell data to the view event this visit already created,
+        rather than inserting a second row for the same visit (which would
+        double-count it as two views). Returns False if no matching view
+        exists (the beacon raced the insert, or arrived for a visit that was
+        never recorded), callers treat that as a benign no-op."""
+        identifier = _object_id(link_id)
+        if identifier is None:
+            return False
+
+        result = await self.collection.update_one(
+            {
+                "visit_id": visit_id,
+                "link_id": identifier,
+                "event_type": EventType.VIEW.value,
+            },
+            {"$set": {"page_number": page_number, "dwell_time_seconds": dwell_seconds}},
+        )
+        return result.matched_count > 0
 
     async def list_by_link(
         self, link_id: str, *, limit: int = 500

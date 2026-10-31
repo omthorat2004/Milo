@@ -8,7 +8,12 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 
-from milo_backend.core import FetchedDocument, Settings, fetch_document
+from milo_backend.core import (
+    FetchedDocument,
+    Settings,
+    ensure_is_pdf_document,
+    fetch_document,
+)
 from milo_backend.dao.analytics_event import AnalyticsEventDAO
 from milo_backend.dao.resume import ResumeDAO
 from milo_backend.dao.tracking_link import TrackingLinkDAO
@@ -27,14 +32,6 @@ logger = logging.getLogger("milo.tracking_link")
 MAX_SLUG_ATTEMPTS = 5
 
 RETRYABLE_STATUS_CODES = frozenset({500, 502, 503, 504})
-
-# A tracking link is rendered inline, under Milo's own origin, by whoever
-# opens it. Proxying back whatever content type a user-supplied URL happens
-# to serve, HTML with a <script> tag included, would let anyone turn a
-# tracking link into stored XSS served from Milo's domain. PDF is the only
-# format the product promises ("a candidate hosts their resume PDF"), so it
-# is the only one allowed through, regardless of what the source host sends.
-ALLOWED_CONTENT_TYPES = frozenset({"application/pdf"})
 
 
 @dataclass(frozen=True)
@@ -166,34 +163,28 @@ class LinkService:
         self,
         *,
         slug: str,
-        session_id: str | None,
+        visit_id: str,
         page_number: int | None,
         dwell_seconds: float,
     ) -> None:
         """Best-effort: sent via `navigator.sendBeacon`, so there is no response
         the caller can act on. A link that's gone, expired, or revoked by the
         time the beacon arrives is a benign race (the viewer was already
-        reading it), this silently no-ops rather than raising."""
+        reading it), this silently no-ops rather than raising.
+
+        Updates the view event this visit already created (matched by
+        visit_id) instead of inserting a new row: a visit is one `view`, not
+        a `view` plus a separate `dwell` row double-counted as two."""
         link = await self.links.get_by_slug(slug)
         if link is None:
             return
 
         try:
-            await self.events.create(
+            await self.events.update_dwell(
+                visit_id=visit_id,
                 link_id=link.id,
-                resume_id=link.resume_id,
-                event_type=EventType.VIEW,
-                occurred_at=datetime.now(UTC),
-                session_id=session_id,
-                device_category=None,
-                browser=None,
-                os=None,
-                referrer_domain=None,
-                utm_source=None,
-                utm_medium=None,
-                utm_campaign=None,
                 page_number=page_number,
-                dwell_time_seconds=dwell_seconds,
+                dwell_seconds=dwell_seconds,
             )
         except Exception:
             logger.warning(
@@ -228,6 +219,7 @@ class LinkService:
         utm_medium: str | None,
         utm_campaign: str | None,
         page_number: int | None,
+        visit_id: str | None = None,
     ) -> ResolvedDocument:
         link = await self.links.get_by_slug(slug)
         if link is None:
@@ -246,7 +238,17 @@ class LinkService:
             raise ResumeNotFound()
 
         document = await self._fetch_with_retry(resume.source_url)
-        _ensure_allowed_content_type(document.content_type)
+        try:
+            ensure_is_pdf_document(document.content_type, document.content)
+        except ValueError as error:
+            raise ResumeFetchFailed(
+                msg="That resume isn't a PDF Milo can display.",
+                details={
+                    "content_type": document.content_type.split(";", 1)[0]
+                    .strip()
+                    .lower()
+                },
+            ) from error
 
         try:
             await self.events.create(
@@ -264,6 +266,7 @@ class LinkService:
                 utm_campaign=utm_campaign,
                 page_number=page_number,
                 dwell_time_seconds=None,
+                visit_id=visit_id,
             )
         except Exception:
             logger.warning(
@@ -312,15 +315,6 @@ class LinkService:
             "Resume fetch failed after %d attempts: %s", attempts, last_error
         )
         raise ResumeFetchFailed() from last_error
-
-
-def _ensure_allowed_content_type(content_type: str) -> None:
-    media_type = content_type.split(";", 1)[0].strip().lower()
-    if media_type not in ALLOWED_CONTENT_TYPES:
-        raise ResumeFetchFailed(
-            msg="That resume isn't a PDF Milo can display.",
-            details={"content_type": media_type},
-        )
 
 
 def _generate_slug(length: int) -> str:

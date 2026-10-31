@@ -253,6 +253,10 @@ function ResumeEditor({ link }: { link: TrackingLink }) {
             "transition-colors focus:border-signal-400/60 focus:outline-none",
           )}
         />
+        <p className="mt-1.5 text-xs text-foreground-muted">
+          Google Drive works best: it rarely goes down. Any host with a public PDF URL works too
+          (Dropbox, your own site). Milo stores the link, not the file.
+        </p>
       </div>
 
       <SiblingLinksNotice link={link} />
