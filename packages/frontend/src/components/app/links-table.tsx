@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useRevokeLinkMutation } from "@/hooks/use-link-mutations";
 import { useMyEventsQuery, useMyLinksQuery } from "@/hooks/use-link-queries";
 import { computeSummary } from "@/lib/links-analytics";
-import { linkStatus } from "@/lib/links.api";
+import { linkStatus, type LinkStatus } from "@/lib/links.api";
 
 export function LinksTable() {
   const linksQuery = useMyLinksQuery();
@@ -61,6 +61,20 @@ export function LinksTable() {
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <LinkStatusBadge status={status} />
                   <CopyLinkButton value={link.share_url} />
+                  {/* Below sm, the actions column further down this row is
+                   * hidden entirely (there's no room for a separate
+                   * right-aligned column), so the same icons render here
+                   * instead, in line with the status/copy-link row rather
+                   * than as an orphaned second row with dead space beside
+                   * it. */}
+                  <div className="flex items-center gap-1 sm:hidden">
+                    <LinkRowActions
+                      linkId={link.id}
+                      resumeTitle={link.resume_title}
+                      status={status}
+                      onRevoke={setPendingRevokeId}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -73,24 +87,13 @@ export function LinksTable() {
                 })}
               </span>
 
-              <div className="col-span-5 flex items-center gap-2 sm:col-span-1 sm:justify-end">
-                <Link
-                  href={`/${link.id}/links`}
-                  aria-label={`View details for ${link.resume_title}`}
-                  className="inline-flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-                >
-                  <Eye className="size-4" aria-hidden="true" />
-                </Link>
-                {status !== "revoked" ? (
-                  <button
-                    type="button"
-                    aria-label={`Revoke ${link.resume_title}`}
-                    onClick={() => setPendingRevokeId(link.id)}
-                    className="inline-flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-clay-400/10 hover:text-clay-400"
-                  >
-                    <Trash2 className="size-4" aria-hidden="true" />
-                  </button>
-                ) : null}
+              <div className="hidden items-center gap-2 sm:col-span-1 sm:flex sm:justify-end">
+                <LinkRowActions
+                  linkId={link.id}
+                  resumeTitle={link.resume_title}
+                  status={status}
+                  onRevoke={setPendingRevokeId}
+                />
               </div>
             </li>
           );
@@ -112,6 +115,40 @@ export function LinksTable() {
           setPendingRevokeId(null);
         }}
       />
+    </>
+  );
+}
+
+function LinkRowActions({
+  linkId,
+  resumeTitle,
+  status,
+  onRevoke,
+}: {
+  linkId: string;
+  resumeTitle: string;
+  status: LinkStatus;
+  onRevoke: (linkId: string) => void;
+}) {
+  return (
+    <>
+      <Link
+        href={`/${linkId}/links`}
+        aria-label={`View details for ${resumeTitle}`}
+        className="inline-flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+      >
+        <Eye className="size-4" aria-hidden="true" />
+      </Link>
+      {status !== "revoked" ? (
+        <button
+          type="button"
+          aria-label={`Revoke ${resumeTitle}`}
+          onClick={() => onRevoke(linkId)}
+          className="inline-flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-clay-400/10 hover:text-clay-400"
+        >
+          <Trash2 className="size-4" aria-hidden="true" />
+        </button>
+      ) : null}
     </>
   );
 }

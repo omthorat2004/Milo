@@ -33,9 +33,11 @@ for a form (`link-form.tsx`): stacked fields work at every width by default. Pag
 wraps in `mx-auto w-full max-w-5xl` (`PageHeader` usages throughout `(app)`) so it never needs its
 own breakpoint handling.
 
-**Summary-card grids** (`account-dashboard.tsx`, `link-dashboard.tsx`): no columns at the base
-(stacks to one per row), `sm:grid-cols-2`, `lg:grid-cols-4`. Reuse this exact triple rather than
-picking new breakpoints for a new stat grid.
+**Summary-card grids** (`account-dashboard.tsx`, `link-dashboard.tsx`): `grid-cols-2` at the base,
+`lg:grid-cols-4`. A single column at phone width was the original convention but stacked four tiles
+into roughly 700px of scroll before reaching anything else on the page, two per row even on a phone
+reads fine at this tile size (short label, one big number) and was changed for exactly that reason.
+Reuse this exact pair rather than picking new breakpoints for a new stat grid.
 
 **Modals/dialogs** (`confirm-dialog.tsx`): `fixed inset-0 ... p-4` overlay with `w-full max-w-sm` on
 the panel. The `p-4` on the overlay is what keeps the panel off the screen edge on a phone; don't

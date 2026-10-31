@@ -20,7 +20,7 @@ export function AnalyticsPanels({ events }: { events: AnalyticsEvent[] }) {
 
   return (
     <>
-      <section className="mt-8 grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 lg:grid-cols-3">
         <Panel title="Traffic sources" className="lg:col-span-2">
           {sources.length === 0 ? (
             <EmptyState
@@ -57,7 +57,7 @@ export function AnalyticsPanels({ events }: { events: AnalyticsEvent[] }) {
         </Panel>
       </section>
 
-      <section className="mt-4 grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 lg:grid-cols-3">
         <Panel title="Devices">
           {devices.length === 0 ? (
             <EmptyState

@@ -121,11 +121,130 @@ export function dailyActivity(events: AnalyticsEvent[], days = 14): DailyActivit
   return Array.from(buckets.values());
 }
 
+/** `isoDate` is a UTC calendar date (a `dailyActivity` bucket key), so this
+ * must format in UTC too, formatting in the viewer's local zone would read
+ * UTC midnight as the previous day for any negative UTC offset, shifting
+ * every label back by one. */
 export function formatShortDate(isoDate: string): string {
   return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
+}
+
+export type HourlyActivity = { hour: string; views: number; downloads: number };
+
+/** Buckets today's events (UTC calendar day) by UTC hour, 24 buckets. The
+ * other ranges are coarse enough that a day bucket reads fine, but "today"
+ * collapsed to a single bucket would just be one bar, not a trend. */
+export function hourlyActivity(events: AnalyticsEvent[]): HourlyActivity[] {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const buckets = new Map<string, HourlyActivity>();
+
+  for (let hour = 0; hour < 24; hour++) {
+    const key = `${todayKey}T${String(hour).padStart(2, "0")}`;
+    buckets.set(key, { hour: key, views: 0, downloads: 0 });
+  }
+
+  for (const event of events) {
+    if (!event.occurred_at.startsWith(todayKey)) continue;
+    const key = event.occurred_at.slice(0, 13);
+    const bucket = buckets.get(key);
+    if (!bucket) continue;
+    if (event.event_type === "download") bucket.downloads += 1;
+    else bucket.views += 1;
+  }
+
+  return Array.from(buckets.values());
+}
+
+export function formatHourLabel(hourKey: string): string {
+  return new Date(`${hourKey}:00:00Z`).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+export type MonthlyActivity = { month: string; views: number; downloads: number };
+
+/** Buckets by UTC calendar month, 12 buckets, for the "1 year" range: 365
+ * individual day-bars would be unreadable at chart width. */
+export function monthlyActivity(events: AnalyticsEvent[], months = 12): MonthlyActivity[] {
+  const buckets = new Map<string, MonthlyActivity>();
+  const today = new Date();
+
+  for (let offset = months - 1; offset >= 0; offset--) {
+    const monthStart = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - offset, 1),
+    );
+    const key = monthStart.toISOString().slice(0, 7);
+    buckets.set(key, { month: key, views: 0, downloads: 0 });
+  }
+
+  for (const event of events) {
+    const key = event.occurred_at.slice(0, 7);
+    const bucket = buckets.get(key);
+    if (!bucket) continue;
+    if (event.event_type === "download") bucket.downloads += 1;
+    else bucket.views += 1;
+  }
+
+  return Array.from(buckets.values());
+}
+
+export function formatMonthLabel(monthKey: string): string {
+  return new Date(`${monthKey}-01T00:00:00Z`).toLocaleDateString(undefined, {
+    month: "short",
+    year: "2-digit",
+    timeZone: "UTC",
+  });
+}
+
+export type TrendRange = "today" | "7d" | "14d" | "1m" | "1y";
+
+export type TrendPoint = { key: string; label: string; views: number; downloads: number };
+
+export const TREND_RANGES: { value: TrendRange; label: string }[] = [
+  { value: "today", label: "Today" },
+  { value: "7d", label: "7D" },
+  { value: "14d", label: "14D" },
+  { value: "1m", label: "1M" },
+  { value: "1y", label: "1Y" },
+];
+
+/** The one entry point `ActivityTrend` calls: picks the right bucket size
+ * (hour/day/month) for the selected range and normalizes it to a common
+ * shape, so the chart itself doesn't need to know which granularity it's
+ * drawing. */
+export function trendPoints(events: AnalyticsEvent[], range: TrendRange): TrendPoint[] {
+  switch (range) {
+    case "today":
+      return hourlyActivity(events).map((point) => ({
+        key: point.hour,
+        label: formatHourLabel(point.hour),
+        views: point.views,
+        downloads: point.downloads,
+      }));
+    case "1y":
+      return monthlyActivity(events).map((point) => ({
+        key: point.month,
+        label: formatMonthLabel(point.month),
+        views: point.views,
+        downloads: point.downloads,
+      }));
+    case "7d":
+    case "14d":
+    case "1m": {
+      const days = { "7d": 7, "14d": 14, "1m": 30 }[range];
+      return dailyActivity(events, days).map((point) => ({
+        key: point.date,
+        label: formatShortDate(point.date),
+        views: point.views,
+        downloads: point.downloads,
+      }));
+    }
+  }
 }
 
 export type TopLink = {
@@ -186,4 +305,26 @@ export function formatRelativeTime(iso: string): string {
 
   const days = Math.round(hours / 24);
   return `${days}d ago`;
+}
+
+/** The exact moment, for a hover title next to the relative time: the Logs
+ * page promises "everything Milo knows about a view is on this page," and
+ * a relative label like "2h ago" alone can't answer "when, exactly." */
+export function formatExactTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "medium",
+  });
+}
+
+/** Every referrer/campaign signal an event carries, joined into one line.
+ * utm_medium and utm_campaign were captured but never shown anywhere in the
+ * UI before this, "all the information" the Logs page promises means every
+ * allowed signal is actually visible, not just source. */
+export function formatReferrerLine(event: AnalyticsEvent): string {
+  const parts = [event.referrer_domain ?? "direct"];
+  if (event.utm_source) parts.push(`utm_source=${event.utm_source}`);
+  if (event.utm_medium) parts.push(`utm_medium=${event.utm_medium}`);
+  if (event.utm_campaign) parts.push(`utm_campaign=${event.utm_campaign}`);
+  return parts.join(" · ");
 }

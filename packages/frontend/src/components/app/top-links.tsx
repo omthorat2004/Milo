@@ -21,7 +21,7 @@ export function TopLinksPanel({
   const max = Math.max(1, ...top.map((link) => link.views));
 
   return (
-    <section className="mt-8 rounded-card border border-surface-border bg-surface/60 p-5">
+    <section className="rounded-card border border-surface-border bg-surface/60 p-5">
       <h2 className="font-mono text-[11px] tracking-[0.18em] text-foreground-muted uppercase">
         Top links
       </h2>

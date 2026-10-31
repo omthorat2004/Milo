@@ -56,7 +56,7 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
       <PageHeader
         eyebrow={`Resume · ${link.resume_title}`}
         title="Dashboard"
@@ -69,7 +69,7 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
         }
       />
 
-      <dl className="mt-10 grid gap-px overflow-hidden rounded-card border border-surface-border bg-surface-border sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-surface-border bg-surface-border lg:grid-cols-4">
         {summaryCards.map((card) => (
           <div key={card.label} className="bg-surface px-5 py-6">
             <dt className="text-xs tracking-wide text-foreground-muted">{card.label}</dt>
@@ -82,7 +82,7 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
 
       <AnalyticsPanels events={events} />
 
-      <section className="mt-8 rounded-card border border-surface-border bg-surface/60 p-5">
+      <section className="rounded-card border border-surface-border bg-surface/60 p-5">
         <h2 className="font-mono text-[11px] tracking-[0.18em] text-foreground-muted uppercase">
           Recent activity
         </h2>

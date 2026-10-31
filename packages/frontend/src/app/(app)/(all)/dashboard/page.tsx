@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Dashboard" };
 
 export default function DashboardPage() {
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
       <PageHeader
         eyebrow="Overview"
         title="Dashboard"
