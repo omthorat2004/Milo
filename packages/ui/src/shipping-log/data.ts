@@ -10,6 +10,14 @@ export type ShipEntry = {
 
 export const shippingLog: readonly ShipEntry[] = [
   {
+    date: "2026-10-31",
+    title: "Forgot your password, without a way to probe who has an account",
+    description:
+      "POST /auth/forgot-password and POST /auth/reset-password reuse the registration flow's OTP mechanics, a hashed code, an attempt limit, a TTL-expiring record, but in their own password_resets collection, so a pending email verification and a pending password reset for the same user never collide on one row. forgot-password is written to be the one auth endpoint whose response never varies: no email echo, no timers, 200 whether or not the address has an account, whether it's verified, or whether an email actually went out, deliberately stricter than /auth/verify-email/status, which does leak known-vs-unknown and was an accepted gap for the less sensitive registration flow. reset-password follows the same rule, collapsing an unknown email, no pending reset, an expired code, and a wrong code into one password_reset_invalid rather than a response that would let the endpoint be used to test which emails have accounts. The frontend adds a two-step /forgot-password page and a show/hide toggle on every password field, shared by login and register.",
+    tags: ["Backend", "Auth", "Security"],
+    status: "shipped",
+  },
+  {
     date: "2026-10-30",
     title: "The resume viewer renders its own PDF, instead of trusting the browser's",
     description:
