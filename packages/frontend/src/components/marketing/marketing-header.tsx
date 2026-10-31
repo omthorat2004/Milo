@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/stores/auth-store";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@milo/ui/theme";
 
@@ -15,6 +16,7 @@ const navigation = [
 
 export function MarketingHeader() {
   const pathname = usePathname();
+  const { isAuthenticated, isLoading } = useAuthStore();
 
   return (
     <header className="sticky top-0 z-50 border-b border-surface-border bg-background/80 backdrop-blur-md">
@@ -61,12 +63,20 @@ export function MarketingHeader() {
         <div className="flex items-center gap-2">
           <ThemeToggle className="flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground" />
 
-          <Button href="/login" variant="ghost" size="sm">
-            Log in
-          </Button>
-          <Button href="/register" size="sm">
-            Get started
-          </Button>
+          {isLoading ? null : isAuthenticated ? (
+            <Button href="/dashboard" size="sm">
+              Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button href="/login" variant="ghost" size="sm">
+                Log in
+              </Button>
+              <Button href="/register" size="sm">
+                Get started
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

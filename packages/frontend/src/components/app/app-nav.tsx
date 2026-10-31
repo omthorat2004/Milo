@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, LayoutDashboard, ScrollText } from "lucide-react";
+import { ArrowLeft, FileText, LayoutDashboard, ScrollText } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -46,7 +46,17 @@ export function AppNav({ resourceId }: Props) {
           <ThemeToggle className="flex size-8 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground" />
         </div>
 
-        <nav className="mt-10 flex flex-col gap-1" aria-label="Application">
+        {resourceId ? (
+          <Link
+            href="/links"
+            className="mt-10 flex items-center gap-2 px-3 text-sm text-foreground-muted transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+            All links
+          </Link>
+        ) : null}
+
+        <nav className={cn("flex flex-col gap-1", resourceId ? "mt-4" : "mt-10")} aria-label="Application">
           {items.map((item) => {
             const active = isActive(item.segment);
             return (
@@ -78,6 +88,17 @@ export function AppNav({ resourceId }: Props) {
           Private beta. Accounts are not open yet.
         </p>
       </aside>
+
+      {resourceId ? (
+        <Link
+          href="/links"
+          aria-label="Back to all links"
+          className="fixed top-4 left-4 z-40 flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-2 text-xs text-foreground-muted backdrop-blur-md transition-colors hover:text-foreground lg:hidden"
+        >
+          <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+          All links
+        </Link>
+      ) : null}
 
       <ThemeToggle className="fixed top-4 right-4 z-40 flex size-9 items-center justify-center rounded-full bg-background/80 text-foreground-muted backdrop-blur-md transition-colors hover:text-foreground lg:hidden" />
 
