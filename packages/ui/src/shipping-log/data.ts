@@ -197,16 +197,9 @@ export type PlannedEntry = {
 
 export const upcomingWork: readonly PlannedEntry[] = [
   {
-    title: "Event pipeline and dashboard",
-    description:
-      "Anonymous sessions, deduplicated page views, dwell time per page, and the analytics that turn those into views, unique viewers, downloads and traffic source.",
-    when: "soon",
-    tags: ["Analytics", "MongoDB"],
-  },
-  {
     title: "Link controls",
     description:
-      "Expiring links, one link per application, and UTM presets so a candidate can tell LinkedIn from a referral without hand-editing query strings.",
+      "One link per application, and UTM presets so a candidate can tell LinkedIn from a referral without hand-editing query strings.",
     when: "later",
     tags: ["Product"],
   },
