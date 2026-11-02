@@ -11,6 +11,14 @@ export type ShipEntry = {
 export const shippingLog: readonly ShipEntry[] = [
   {
     date: "2026-10-31",
+    title: "The account-wide activity log says which resume, and shows the whole event",
+    description:
+      "The /logs page lists events across every resume someone tracks, but each row just said \"Page 1 viewed\" with nothing identifying which one. ActivityLog now takes an optional linkTitleFor resolver, passed only by AccountLogs, since the per-link logs page is already scoped to one resume and doesn't need it. The row also surfaces every signal an event actually carries instead of a subset: utm_medium and utm_campaign were captured but never shown anywhere, and the relative timestamp (\"2h ago\") gets the exact time as a hover title. A raw session id was briefly shown here too and removed, not useful to a resume owner and an identifier with no reason to be on screen. Separately, an old event with no page_number, captured before this session's PDF-viewer rework added real page tracking, used to render literally \"Page ? viewed\"; it now reads \"Resume viewed\".",
+    tags: ["Frontend", "Analytics"],
+    status: "shipped",
+  },
+  {
+    date: "2026-10-31",
     title: "Forgot your password, without a way to probe who has an account",
     description:
       "POST /auth/forgot-password and POST /auth/reset-password reuse the registration flow's OTP mechanics, a hashed code, an attempt limit, a TTL-expiring record, but in their own password_resets collection, so a pending email verification and a pending password reset for the same user never collide on one row. forgot-password is written to be the one auth endpoint whose response never varies: no email echo, no timers, 200 whether or not the address has an account, whether it's verified, or whether an email actually went out, deliberately stricter than /auth/verify-email/status, which does leak known-vs-unknown and was an accepted gap for the less sensitive registration flow. reset-password follows the same rule, collapsing an unknown email, no pending reset, an expired code, and a wrong code into one password_reset_invalid rather than a response that would let the endpoint be used to test which emails have accounts. The frontend adds a two-step /forgot-password page and a show/hide toggle on every password field, shared by login and register.",
