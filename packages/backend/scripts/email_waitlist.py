@@ -65,7 +65,15 @@ async def main() -> None:
         waitlist = database[WAITLIST_COLLECTION]
         log = database[LOG_COLLECTION]
 
-        emails = sorted({doc["email"] async for doc in waitlist.find({}, {"email": 1})})
+        if args.to:
+            # Test-send path: targets this one address regardless of whether it's
+            # actually on the waitlist, so a template can be previewed before a
+            # real send.
+            emails = [args.to]
+        else:
+            emails = sorted(
+                {doc["email"] async for doc in waitlist.find({}, {"email": 1})}
+            )
         already_sent = {
             doc["email"]
             async for doc in log.find(
@@ -139,6 +147,12 @@ def _parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="Only queue the first N pending recipients.",
+    )
+    parser.add_argument(
+        "--to",
+        default=None,
+        help="Send only to this address, ignoring the waitlist collection. For "
+        "previewing a template before a real send.",
     )
     parser.add_argument(
         "--send",
