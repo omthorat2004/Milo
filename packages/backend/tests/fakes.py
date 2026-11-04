@@ -248,6 +248,12 @@ class FakeTrackingLinkDAO:
         link = self._by_id.get(link_id)
         return link if link is not None and link.owner_id == owner_id else None
 
+    async def get_by_slug_for_owner(
+        self, slug: str, owner_id: str
+    ) -> TrackingLink | None:
+        link = await self.get_by_slug(slug)
+        return link if link is not None and link.owner_id == owner_id else None
+
     async def list_by_resume(
         self, resume_id: str, *, limit: int = 200
     ) -> list[TrackingLink]:

@@ -4,11 +4,11 @@ import { ActivityLog } from "@/components/app/activity-log";
 import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
-import { useLinkEventsQuery, useLinkQuery } from "@/hooks/use-link-queries";
+import { useLinkBySlugQuery, useLinkEventsQuery } from "@/hooks/use-link-queries";
 
-export function LinkLogs({ linkId }: { linkId: string }) {
-  const linkQuery = useLinkQuery(linkId);
-  const eventsQuery = useLinkEventsQuery(linkId);
+export function LinkLogs({ slug }: { slug: string }) {
+  const linkQuery = useLinkBySlugQuery(slug);
+  const eventsQuery = useLinkEventsQuery(linkQuery.data?.id ?? "");
 
   if (linkQuery.isLoading) {
     return (

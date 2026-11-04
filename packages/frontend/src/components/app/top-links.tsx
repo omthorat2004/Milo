@@ -37,18 +37,21 @@ export function TopLinksPanel({
           {top.map((link) => (
             <li key={link.linkId} className="flex items-center gap-3">
               <Link
-                href={`/${link.linkId}/dashboard`}
-                className="w-40 shrink-0 truncate text-sm text-foreground hover:text-signal-400"
+                href={`/${link.slug}/dashboard`}
+                className="w-24 shrink-0 truncate text-sm text-foreground hover:text-signal-400 sm:w-40"
               >
                 {link.title}
               </Link>
-              <div className="h-1.5 flex-1 rounded-full bg-surface">
+              {/* Decorative relative-to-max bar: the stats text already carries the real
+               * numbers, so this is the one dropped at phone width rather than shrunk,
+               * matching the table's "hide, don't shrink" column convention. */}
+              <div className="hidden h-1.5 flex-1 rounded-full bg-surface sm:block">
                 <div
                   className="h-1.5 rounded-full bg-signal-400"
                   style={{ width: `${(link.views / max) * 100}%` }}
                 />
               </div>
-              <span className="w-24 shrink-0 text-right text-xs text-foreground-muted">
+              <span className="ml-auto shrink-0 text-right text-xs text-foreground-muted sm:ml-0 sm:w-24">
                 {link.views} views · {link.downloads} dl
               </span>
               <LinkStatusBadge status={link.status} className="shrink-0" />

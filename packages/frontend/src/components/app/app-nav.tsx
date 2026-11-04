@@ -1,12 +1,15 @@
 "use client";
 
-import { ArrowLeft, FileText, LayoutDashboard, ScrollText } from "lucide-react";
+import { ArrowLeft, FileText, LayoutDashboard, LogOut, ScrollText, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { MiloMark } from "@/components/app/milo-mark";
+import { useLogoutMutation } from "@/hooks/use-auth-mutations";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@milo/ui/theme";
+
+const PROFILE_HREF = "/account";
 
 const items = [
   { segment: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -24,11 +27,14 @@ function hrefFor(segment: string, resourceId?: string): string {
 
 export function AppNav({ resourceId }: Props) {
   const pathname = usePathname();
+  const logout = useLogoutMutation();
 
   const isActive = (segment: string) => {
     const href = hrefFor(segment, resourceId);
     return pathname === href || pathname.startsWith(`${href}/`);
   };
+
+  const profileActive = pathname === PROFILE_HREF || pathname.startsWith(`${PROFILE_HREF}/`);
 
   return (
     <>
@@ -84,9 +90,30 @@ export function AppNav({ resourceId }: Props) {
           })}
         </nav>
 
-        <p className="mt-auto px-3 text-xs text-foreground-muted">
-          Private beta. Accounts are not open yet.
-        </p>
+        <div className="mt-auto flex flex-col gap-1 border-t border-surface-border pt-4">
+          <Link
+            href={PROFILE_HREF}
+            aria-current={profileActive ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              profileActive
+                ? "bg-surface text-foreground"
+                : "text-foreground-muted hover:bg-surface-hover hover:text-foreground",
+            )}
+          >
+            <User className="size-4 shrink-0" aria-hidden="true" />
+            Profile
+          </Link>
+          <button
+            type="button"
+            onClick={() => logout.mutate()}
+            disabled={logout.isPending}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-55"
+          >
+            <LogOut className="size-4 shrink-0" aria-hidden="true" />
+            {logout.isPending ? "Logging out…" : "Log out"}
+          </button>
+        </div>
       </aside>
 
       {resourceId ? (
@@ -98,7 +125,15 @@ export function AppNav({ resourceId }: Props) {
           <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
           All links
         </Link>
-      ) : null}
+      ) : (
+        <Link
+          href={PROFILE_HREF}
+          aria-label="Profile"
+          className="fixed top-4 right-16 z-40 flex size-9 items-center justify-center rounded-full bg-background/80 text-foreground-muted backdrop-blur-md transition-colors hover:text-foreground lg:hidden"
+        >
+          <User className="size-4" aria-hidden="true" />
+        </Link>
+      )}
 
       <ThemeToggle className="fixed top-4 right-4 z-40 flex size-9 items-center justify-center rounded-full bg-background/80 text-foreground-muted backdrop-blur-md transition-colors hover:text-foreground lg:hidden" />
 

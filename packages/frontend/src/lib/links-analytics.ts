@@ -81,10 +81,16 @@ function groupCount(
     .sort((a, b) => b.count - a.count);
 }
 
+export function capitalize(value: string): string {
+  return value.length > 0 ? value[0]!.toUpperCase() + value.slice(1) : value;
+}
+
 /** Device/browser/OS are allowed signals (root CLAUDE.md) the backend already records on every
- * event; these three were captured from the start but never surfaced in any panel. */
+ * event; these three were captured from the start but never surfaced in any panel.
+ * device_category arrives lowercase ("desktop"/"mobile"/"tablet") from detectDeviceCategory,
+ * unlike browser/os which already come out properly cased; capitalized here for display only. */
 export function deviceBreakdown(events: AnalyticsEvent[]): NamedCount[] {
-  return groupCount(events, (event) => event.device_category ?? "Unknown");
+  return groupCount(events, (event) => capitalize(event.device_category ?? "Unknown"));
 }
 
 export function browserBreakdown(events: AnalyticsEvent[]): NamedCount[] {
@@ -175,9 +181,7 @@ export function monthlyActivity(events: AnalyticsEvent[], months = 12): MonthlyA
   const today = new Date();
 
   for (let offset = months - 1; offset >= 0; offset--) {
-    const monthStart = new Date(
-      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - offset, 1),
-    );
+    const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - offset, 1));
     const key = monthStart.toISOString().slice(0, 7);
     buckets.set(key, { month: key, views: 0, downloads: 0 });
   }
@@ -249,6 +253,7 @@ export function trendPoints(events: AnalyticsEvent[], range: TrendRange): TrendP
 
 export type TopLink = {
   linkId: string;
+  slug: string;
   title: string;
   status: "active" | "expired" | "revoked";
   views: number;
@@ -277,6 +282,7 @@ export function topLinks(
       const counts = countsByLink.get(link.id) ?? { views: 0, downloads: 0 };
       return {
         linkId: link.id,
+        slug: link.slug,
         title: link.resume_title,
         status: statusOf(link),
         views: counts.views,

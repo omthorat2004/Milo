@@ -9,13 +9,13 @@ import { EmptyState } from "@/components/app/empty-state";
 import { LinkStatusBadge } from "@/components/app/link-status-badge";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
-import { useLinkEventsQuery, useLinkQuery } from "@/hooks/use-link-queries";
+import { useLinkBySlugQuery, useLinkEventsQuery } from "@/hooks/use-link-queries";
 import { computeSummary, formatRelativeTime } from "@/lib/links-analytics";
 import { linkStatus } from "@/lib/links.api";
 
-export function LinkDashboard({ linkId }: { linkId: string }) {
-  const linkQuery = useLinkQuery(linkId);
-  const eventsQuery = useLinkEventsQuery(linkId);
+export function LinkDashboard({ slug }: { slug: string }) {
+  const linkQuery = useLinkBySlugQuery(slug);
+  const eventsQuery = useLinkEventsQuery(linkQuery.data?.id ?? "");
 
   if (linkQuery.isLoading) {
     return (
@@ -89,7 +89,7 @@ export function LinkDashboard({ linkId }: { linkId: string }) {
         {lastEvent ? (
           <p className="mt-4 text-sm text-foreground-muted">
             Last activity {formatRelativeTime(lastEvent.occurred_at)}. See{" "}
-            <Link href={`/${link.id}/logs`} className="text-signal-400 hover:underline">
+            <Link href={`/${link.slug}/logs`} className="text-signal-400 hover:underline">
               the full log
             </Link>{" "}
             for every event.

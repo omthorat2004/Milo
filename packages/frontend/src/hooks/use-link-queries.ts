@@ -4,6 +4,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import {
   getLink,
+  getLinkBySlug,
   listLinkEvents,
   listLinksForResume,
   listMyEvents,
@@ -14,6 +15,7 @@ import {
 
 export const linksQueryKey = ["links"] as const;
 export const linkQueryKey = (id: string) => ["links", id] as const;
+export const linkBySlugQueryKey = (slug: string) => ["links", "by-slug", slug] as const;
 export const linkEventsQueryKey = (id: string) => ["links", id, "events"] as const;
 export const eventsQueryKey = ["events"] as const;
 export const resumeLinksQueryKey = (resumeId: string) => ["resumes", resumeId, "links"] as const;
@@ -27,6 +29,18 @@ export function useLinkQuery(id: string): UseQueryResult<TrackingLink> {
     queryKey: linkQueryKey(id),
     queryFn: () => getLink(id),
     enabled: Boolean(id),
+  });
+}
+
+/** The authenticated dashboard/links/logs pages key their route on a link's
+ * slug (see linkBySlugQueryKey), not its Mongo id, matching the public share
+ * URL. Everything downstream (events, revoke, update-expiry) still uses the
+ * real id once this resolves it. */
+export function useLinkBySlugQuery(slug: string): UseQueryResult<TrackingLink> {
+  return useQuery({
+    queryKey: linkBySlugQueryKey(slug),
+    queryFn: () => getLinkBySlug(slug),
+    enabled: Boolean(slug),
   });
 }
 

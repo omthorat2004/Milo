@@ -60,6 +60,17 @@ async def list_my_tracking_links(
     return [_public(overview, settings=settings) for overview in overviews]
 
 
+@router.get("/links/by-slug/{slug}", response_model=TrackingLinkResponse)
+async def get_tracking_link_by_slug(
+    slug: str, user: CurrentUser, service: LinkServiceDep
+) -> TrackingLinkResponse:
+    """What the authenticated dashboard/links/logs pages resolve against: the
+    same slug already in the link's public share URL, so the address bar
+    never needs to show the Mongo id."""
+    overview = await service.get_link_by_slug(slug=slug, owner_id=user.id)
+    return _public(overview, settings=get_settings())
+
+
 @router.get("/links/{link_id}", response_model=TrackingLinkResponse)
 async def get_tracking_link(
     link_id: str, user: CurrentUser, service: LinkServiceDep

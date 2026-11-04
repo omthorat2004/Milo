@@ -35,6 +35,12 @@ export function AccountDashboard() {
     return links.find((link) => link.id === linkId)?.resume_title ?? "Deleted link";
   }
 
+  // Falls back to the Mongo id itself for an event whose link was deleted: that 404s the
+  // same way the old link.id-based href always did for a gone link, not a new failure mode.
+  function linkSlug(linkId: string): string {
+    return links.find((link) => link.id === linkId)?.slug ?? linkId;
+  }
+
   return (
     <>
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-surface-border bg-surface-border lg:grid-cols-4">
@@ -73,7 +79,10 @@ export function AccountDashboard() {
                 >
                   <span className="min-w-0 truncate text-foreground">
                     {event.event_type === "download" ? "Download" : "View"} ·{" "}
-                    <Link href={`/${event.link_id}/dashboard`} className="hover:text-signal-400">
+                    <Link
+                      href={`/${linkSlug(event.link_id)}/dashboard`}
+                      className="hover:text-signal-400"
+                    >
                       {linkTitle(event.link_id)}
                     </Link>
                   </span>

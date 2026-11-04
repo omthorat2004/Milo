@@ -45,7 +45,7 @@ export function LinkForm({ className }: { className?: string }) {
     createTrackingLink.mutate(
       { title: trimmedTitle, sourceUrl: trimmedUrl, expiresInDays: parsedExpiry },
       {
-        onSuccess: (link) => router.push(`/${link.id}/dashboard`),
+        onSuccess: (link) => router.push(`/${link.slug}/dashboard`),
         onError: (mutationError) => {
           setError(getLinkErrorMessage(mutationError, "Couldn't create this link. Try again."));
         },

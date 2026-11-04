@@ -119,6 +119,46 @@ async def test_create_link_sets_expiry_from_days(
     assert overview.link.expires_at is not None
 
 
+async def test_get_link_by_slug_for_owner(
+    service: LinkService, resumes: FakeResumeDAO, links: FakeTrackingLinkDAO
+) -> None:
+    resume = await _resume(resumes)
+    link = await links.create(
+        resume_id=resume.id,
+        owner_id=OWNER,
+        slug="owned1",
+        now=datetime.now(UTC),
+        expires_at=None,
+    )
+    assert link is not None
+
+    overview = await service.get_link_by_slug(slug="owned1", owner_id=OWNER)
+
+    assert overview.link.id == link.id
+    assert overview.resume_title == "My resume"
+
+
+async def test_get_link_by_slug_for_other_owner_raises_not_found(
+    service: LinkService, resumes: FakeResumeDAO, links: FakeTrackingLinkDAO
+) -> None:
+    resume = await _resume(resumes)
+    await links.create(
+        resume_id=resume.id,
+        owner_id=OWNER,
+        slug="notyours1",
+        now=datetime.now(UTC),
+        expires_at=None,
+    )
+
+    with pytest.raises(TrackingLinkNotFound):
+        await service.get_link_by_slug(slug="notyours1", owner_id="someone-else")
+
+
+async def test_get_link_by_unknown_slug_raises_not_found(service: LinkService) -> None:
+    with pytest.raises(TrackingLinkNotFound):
+        await service.get_link_by_slug(slug="missing", owner_id=OWNER)
+
+
 async def test_resolve_unknown_slug_raises_not_found(service: LinkService) -> None:
     with pytest.raises(TrackingLinkNotFound):
         await service.resolve(**_resolve_kwargs("missing"))

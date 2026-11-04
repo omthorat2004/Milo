@@ -151,6 +151,7 @@ export function ResumeViewer({ slug }: { slug: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     startedAtRef.current = Date.now();
     const sessionId = getOrCreateSessionId();
 
@@ -170,7 +171,13 @@ export function ResumeViewer({ slug }: { slug: string }) {
 
     // Fetching the whole document (once, here) is what hits the backend's
     // GET /l/{slug} and records the `view` event, the same request the
-    // previous iframe-based viewer made by setting `src`.
+    // previous iframe-based viewer made by setting `src`. The AbortController
+    // is load-bearing, not just for tidiness: React's dev-only Strict Mode
+    // double-invokes this effect (mount, cleanup, mount) before the first
+    // fetch resolves, and a plain `cancelled` flag only suppresses the
+    // discarded result, it doesn't stop the request from reaching the
+    // backend, so the view got recorded twice for one real visit. Aborting
+    // actually cancels the in-flight request before that happens.
     async function load() {
       try {
         const pdfjsLib = await import("pdfjs-dist");
@@ -179,7 +186,7 @@ export function ResumeViewer({ slug }: { slug: string }) {
           import.meta.url,
         ).toString();
 
-        const response = await fetch(viewUrl);
+        const response = await fetch(viewUrl, { signal: controller.signal });
         if (!response.ok) throw new Error(`Fetch failed with ${response.status}`);
         const data = await response.arrayBuffer();
         if (cancelled) return;
@@ -192,8 +199,10 @@ export function ResumeViewer({ slug }: { slug: string }) {
         pdfDocRef.current = pdfDoc;
         setNumPages(pdfDoc.numPages);
         setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("error");
+      } catch (err) {
+        if (!cancelled && !(err instanceof DOMException && err.name === "AbortError")) {
+          setStatus("error");
+        }
       }
     }
     void load();
@@ -221,6 +230,7 @@ export function ResumeViewer({ slug }: { slug: string }) {
 
     return () => {
       cancelled = true;
+      controller.abort();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", reportDwell);
       renderTaskRef.current?.cancel();

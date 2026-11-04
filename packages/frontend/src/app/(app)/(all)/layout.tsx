@@ -4,7 +4,10 @@ export default function GlobalLayout({ children }: { children: React.ReactNode }
   return (
     <>
       <AppNav />
-      <main className="px-5 pt-8 pb-24 sm:px-8 lg:pb-12">{children}</main>
+      {/* Extra top padding below lg reserves space for the fixed mobile icon row
+       * (Profile/back-link + ThemeToggle in app-nav.tsx), which otherwise floats
+       * directly over PageHeader's top-left eyebrow/title at phone width. */}
+      <main className="px-5 pt-20 pb-24 sm:px-8 lg:pt-8 lg:pb-12">{children}</main>
     </>
   );
 }

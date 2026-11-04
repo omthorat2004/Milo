@@ -17,7 +17,7 @@ export default function LinksPage() {
       />
 
       <div className="mt-10 overflow-hidden rounded-card border border-surface-border">
-        <div className="hidden grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 border-b border-surface-border bg-surface px-5 py-3 font-mono text-[11px] tracking-[0.16em] text-foreground-muted uppercase sm:grid">
+        <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-4 border-b border-surface-border bg-surface px-5 py-3 font-mono text-[11px] tracking-[0.16em] text-foreground-muted uppercase sm:grid">
           <span>Resume</span>
           <span>Views</span>
           <span>Downloads</span>

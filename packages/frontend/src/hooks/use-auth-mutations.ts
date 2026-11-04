@@ -6,6 +6,7 @@ import { sessionQueryKey } from "@/hooks/use-auth-session";
 import {
   forgotPassword,
   login,
+  logout,
   register,
   resetPassword,
   startVerification,
@@ -108,6 +109,26 @@ export function useResetPasswordMutation(): UseMutationResult<
   return useMutation({
     mutationFn: resetPassword,
     onSuccess: adoptSession,
+  });
+}
+
+/**
+ * Clears auth-store and the session query cache on success so PrivateProvider's own effect
+ * redirects to /login, same as a session simply expiring. The backend call is a cookie-clearing
+ * side effect this component never reads; onError still clears local state, since a logout
+ * request that itself failed (e.g. the network) shouldn't leave someone stuck "logged in" to a
+ * session the server may have already dropped.
+ */
+export function useLogoutMutation(): UseMutationResult<void, unknown, void> {
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: logout,
+    onSettled: () => {
+      clearAuth();
+      queryClient.setQueryData(sessionQueryKey, null);
+    },
   });
 }
 

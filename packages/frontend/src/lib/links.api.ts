@@ -58,6 +58,14 @@ export async function getLink(linkId: string): Promise<TrackingLink> {
   return data;
 }
 
+/** Resolves a link by its slug, the same identifier already in its public
+ * share URL, so the authenticated dashboard/links/logs pages can carry that
+ * in the address bar instead of the Mongo id. */
+export async function getLinkBySlug(slug: string): Promise<TrackingLink> {
+  const { data } = await api.get<TrackingLink>(`/links/by-slug/${slug}`);
+  return data;
+}
+
 export async function revokeLink(linkId: string): Promise<void> {
   await api.delete(`/links/${linkId}`);
 }

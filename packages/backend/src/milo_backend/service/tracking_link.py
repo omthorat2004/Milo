@@ -132,6 +132,21 @@ class LinkService:
 
         return _overview(link, resume)
 
+    async def get_link_by_slug(self, *, slug: str, owner_id: str) -> LinkOverview:
+        """The owner-facing counterpart to `resolve`: same slug lookup, but
+        scoped to the owner so the authenticated dashboard/links/logs pages
+        can use the same slug a tracking link's public share URL already
+        carries, instead of exposing the Mongo id in the address bar."""
+        link = await self.links.get_by_slug_for_owner(slug, owner_id)
+        if link is None:
+            raise TrackingLinkNotFound()
+
+        resume = await self.resumes.get_by_id(link.resume_id)
+        if resume is None:
+            raise ResumeNotFound()
+
+        return _overview(link, resume)
+
     async def revoke_link(self, *, link_id: str, owner_id: str) -> None:
         link = await self.links.get_by_id_for_owner(link_id, owner_id)
         if link is None:

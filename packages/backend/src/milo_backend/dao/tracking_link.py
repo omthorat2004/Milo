@@ -70,6 +70,16 @@ class TrackingLinkDAO(BaseDAO):
         document = await self.collection.find_one({"slug": slug})
         return _as_link(document) if document else None
 
+    async def get_by_slug_for_owner(
+        self, slug: str, owner_id: str
+    ) -> TrackingLink | None:
+        owner = _object_id(owner_id)
+        if owner is None:
+            return None
+
+        document = await self.collection.find_one({"slug": slug, "owner_id": owner})
+        return _as_link(document) if document else None
+
     async def get_by_id_for_owner(
         self, link_id: str, owner_id: str
     ) -> TrackingLink | None:

@@ -10,15 +10,15 @@ import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { useRevokeLinkMutation, useUpdateLinkExpiryMutation } from "@/hooks/use-link-mutations";
-import { useLinkQuery, useResumeLinksQuery } from "@/hooks/use-link-queries";
+import { useLinkBySlugQuery, useResumeLinksQuery } from "@/hooks/use-link-queries";
 import { useUpdateResumeMutation } from "@/hooks/use-resume-mutations";
 import { getLinkErrorMessage, linkStatus, type TrackingLink } from "@/lib/links.api";
 import { getResumeErrorMessage } from "@/lib/resumes.api";
 import { cn } from "@/lib/utils";
 
-export function LinkSettings({ linkId }: { linkId: string }) {
+export function LinkSettings({ slug }: { slug: string }) {
   const router = useRouter();
-  const linkQuery = useLinkQuery(linkId);
+  const linkQuery = useLinkBySlugQuery(slug);
   const revokeLink = useRevokeLinkMutation();
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
 

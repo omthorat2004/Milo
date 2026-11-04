@@ -8,11 +8,15 @@ import { ConfirmDialog } from "@/components/app/confirm-dialog";
 import { CopyLinkButton } from "@/components/app/copy-link-button";
 import { EmptyState } from "@/components/app/empty-state";
 import { LinkStatusBadge } from "@/components/app/link-status-badge";
+import { Pagination } from "@/components/app/pagination";
 import { Button } from "@/components/ui/button";
+import { usePagination } from "@/hooks/use-pagination";
 import { useRevokeLinkMutation } from "@/hooks/use-link-mutations";
 import { useMyEventsQuery, useMyLinksQuery } from "@/hooks/use-link-queries";
 import { computeSummary } from "@/lib/links-analytics";
 import { linkStatus, type LinkStatus } from "@/lib/links.api";
+
+const PAGE_SIZE = 10;
 
 export function LinksTable() {
   const linksQuery = useMyLinksQuery();
@@ -23,6 +27,7 @@ export function LinksTable() {
   const links = linksQuery.data ?? [];
   const events = eventsQuery.data ?? [];
   const pendingRevokeLink = links.find((link) => link.id === pendingRevokeId) ?? null;
+  const { page, pageCount, pageItems: pageLinks, setPage } = usePagination(links, PAGE_SIZE);
 
   if (linksQuery.isLoading) {
     return <p className="px-5 py-8 text-sm text-foreground-muted">Loading links…</p>;
@@ -42,19 +47,19 @@ export function LinksTable() {
   return (
     <>
       <ul>
-        {links.map((link) => {
+        {pageLinks.map((link) => {
           const summary = computeSummary(events.filter((event) => event.link_id === link.id));
           const status = linkStatus(link);
 
           return (
             <li
               key={link.id}
-              className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] items-center gap-4 border-b border-surface-border px-5 py-4 last:border-0 sm:grid-cols-[2fr_1fr_1fr_1fr_auto]"
+              className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-4 border-b border-surface-border px-5 py-4 last:border-0"
             >
-              <div className="col-span-5 sm:col-span-1">
+              <div className="col-span-5 min-w-0 sm:col-span-1">
                 <Link
-                  href={`/${link.id}/dashboard`}
-                  className="font-display text-base text-foreground hover:text-signal-400"
+                  href={`/${link.slug}/dashboard`}
+                  className="block truncate font-display text-base text-foreground hover:text-signal-400"
                 >
                   {link.resume_title}
                 </Link>
@@ -70,6 +75,7 @@ export function LinksTable() {
                   <div className="flex items-center gap-1 sm:hidden">
                     <LinkRowActions
                       linkId={link.id}
+                      slug={link.slug}
                       resumeTitle={link.resume_title}
                       status={status}
                       onRevoke={setPendingRevokeId}
@@ -90,6 +96,7 @@ export function LinksTable() {
               <div className="hidden items-center gap-2 sm:col-span-1 sm:flex sm:justify-end">
                 <LinkRowActions
                   linkId={link.id}
+                  slug={link.slug}
                   resumeTitle={link.resume_title}
                   status={status}
                   onRevoke={setPendingRevokeId}
@@ -99,6 +106,8 @@ export function LinksTable() {
           );
         })}
       </ul>
+
+      <Pagination page={page} pageCount={pageCount} onChange={setPage} />
 
       <ConfirmDialog
         open={pendingRevokeLink !== null}
@@ -121,11 +130,13 @@ export function LinksTable() {
 
 function LinkRowActions({
   linkId,
+  slug,
   resumeTitle,
   status,
   onRevoke,
 }: {
   linkId: string;
+  slug: string;
   resumeTitle: string;
   status: LinkStatus;
   onRevoke: (linkId: string) => void;
@@ -133,7 +144,7 @@ function LinkRowActions({
   return (
     <>
       <Link
-        href={`/${linkId}/links`}
+        href={`/${slug}/links`}
         aria-label={`View details for ${resumeTitle}`}
         className="inline-flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground"
       >

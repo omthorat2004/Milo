@@ -15,6 +15,13 @@ export function ActivityTrend({ events }: { events: AnalyticsEvent[] }) {
   const max = Math.max(1, ...points.map((point) => point.views));
   const hasActivity = points.some((point) => point.views > 0 || point.downloads > 0);
 
+  // Evenly spaced labels instead of just the two ends, capped so they never crowd into each
+  // other regardless of how many points the range has (24 hourly, 30 daily, 12 monthly, ...).
+  const maxLabels = 6;
+  const labelStep = Math.max(1, Math.ceil(points.length / maxLabels));
+  const showLabel = (index: number) =>
+    index % labelStep === 0 || index === points.length - 1;
+
   return (
     <section className="rounded-card border border-surface-border bg-surface/60 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -77,9 +84,12 @@ export function ActivityTrend({ events }: { events: AnalyticsEvent[] }) {
               </div>
             </div>
           </div>
-          <div className="mt-2 flex justify-between pl-12 text-[11px] text-foreground-muted">
-            <span>{points[0]?.label ?? ""}</span>
-            <span>{points[points.length - 1]?.label ?? ""}</span>
+          <div className="mt-2 flex gap-1 pl-12 text-[10px] text-foreground-muted">
+            {points.map((point, index) => (
+              <span key={point.key} className="flex-1 truncate text-center">
+                {showLabel(index) ? point.label : ""}
+              </span>
+            ))}
           </div>
         </>
       )}
