@@ -11,12 +11,12 @@ from milo_backend.core import (
     Settings,
     create_token,
     decode_token,
+    deliver_email,
     generate_otp,
     hash_otp,
     hash_password,
     password_reset_html,
     password_reset_text,
-    queue_email,
     verification_html,
     verification_text,
     verify_otp,
@@ -262,7 +262,7 @@ class AuthService:
             now=now,
         )
 
-        queue_email(
+        await deliver_email(
             to=user.email,
             subject=f"{code} is your Milo password reset code",
             text_body=password_reset_text(
@@ -271,6 +271,7 @@ class AuthService:
             html_body=password_reset_html(
                 name=user.name, code=code, settings=self.settings
             ),
+            settings=self.settings,
         )
 
         logger.info("Password reset code issued for user %s", user.id)
@@ -333,7 +334,7 @@ class AuthService:
             now=now,
         )
 
-        queue_email(
+        await deliver_email(
             to=user.email,
             subject=f"{code} is your Milo verification code",
             text_body=verification_text(
@@ -342,6 +343,7 @@ class AuthService:
             html_body=verification_html(
                 name=user.name, code=code, settings=self.settings
             ),
+            settings=self.settings,
         )
 
         logger.info("Verification code issued for user %s", user.id)

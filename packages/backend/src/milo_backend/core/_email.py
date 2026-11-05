@@ -64,3 +64,34 @@ async def send_email(
     )
 
     logger.info("Delivered %r via %s", subject, settings.smtp_host)
+
+
+async def deliver_email(
+    *,
+    to: str,
+    subject: str,
+    text_body: str,
+    html_body: str | None = None,
+    settings: Settings,
+) -> bool:
+    """Send an email inline and never raise.
+
+    Awaited on the request rather than handed to a queue, because the API runs
+    on serverless (Vercel) where work scheduled after the response is frozen.
+    Failures are logged and swallowed: callers such as password reset must
+    return the same response whether or not delivery worked, and a failed
+    verification email is recoverable through the resend endpoint. Returns
+    whether delivery succeeded.
+    """
+    try:
+        await send_email(
+            to=to,
+            subject=subject,
+            text_body=text_body,
+            html_body=html_body,
+            settings=settings,
+        )
+    except Exception:
+        logger.exception("Email delivery to %s failed", to)
+        return False
+    return True

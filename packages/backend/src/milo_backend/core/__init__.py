@@ -1,4 +1,3 @@
-from milo_backend.core._celery import celery_app, queue_email
 from milo_backend.core._cookies import (
     ACCESS_TOKEN_COOKIE,
     REFRESH_TOKEN_COOKIE,
@@ -6,7 +5,7 @@ from milo_backend.core._cookies import (
     set_auth_cookies,
 )
 from milo_backend.core._database import connect, disconnect, get_client, get_database
-from milo_backend.core._email import send_email
+from milo_backend.core._email import deliver_email, send_email
 from milo_backend.core._email_templates import (
     password_reset_html,
     password_reset_text,
@@ -48,12 +47,12 @@ __all__ = [
     "FetchedDocument",
     "Settings",
     "TokenType",
-    "celery_app",
     "clear_auth_cookies",
     "client_key",
     "connect",
     "create_token",
     "decode_token",
+    "deliver_email",
     "disconnect",
     "ensure_is_pdf_document",
     "ensure_public_url",
@@ -68,7 +67,6 @@ __all__ = [
     "password_needs_rehash",
     "password_reset_html",
     "password_reset_text",
-    "queue_email",
     "send_email",
     "set_auth_cookies",
     "verification_html",

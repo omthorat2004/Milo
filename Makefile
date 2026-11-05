@@ -46,9 +46,6 @@ dev-frontend: ## Run the product app on :3001
 dev-backend: ## Run the FastAPI backend on :8000
 	cd $(BACKEND) && poetry run uvicorn milo_backend.app:app --reload --port 8000
 
-worker-backend: ## Run the Celery worker (email delivery). Needs Redis; CELERY_TASK_ALWAYS_EAGER=true skips this in dev.
-	cd $(BACKEND) && poetry run celery -A milo_backend.core._celery.celery_app worker --loglevel=info
-
 reset-db: ## Clear every collection in the configured MongoDB database (dev only, asks for confirmation)
 	cd $(BACKEND) && poetry run python scripts/reset_db.py
 

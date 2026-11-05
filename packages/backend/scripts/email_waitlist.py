@@ -2,17 +2,14 @@
 collection, the same cluster/database this backend already uses).
 
 Dry-run by default: prints who would receive the email and does not touch
-SMTP or Celery. Pass --send to actually queue delivery. A second collection,
+SMTP. Pass --send to actually send. A second collection,
 `waitlist_email_log`, records which address already got which subject, so
 re-running the same command after a crash or interruption skips anyone
-already queued instead of emailing them twice, an email can't be unsent.
+already sent instead of emailing them twice, an email can't be unsent.
 
-Delivery goes through the existing `queue_email` (Celery) path, the same one
-registration/reset emails use, which has retry-on-failure built in. Outside
-production `celery_task_always_eager` defaults to true (see Settings), so a
-queued email runs inline on this process rather than needing a separate
-worker; in production, a Celery worker must already be running for anything
-queued here to actually go out.
+Delivery goes through `deliver_email`, the same inline path registration/reset
+emails use, one recipient at a time. An address is only written to the log if
+delivery succeeded, so re-running the command retries the failures.
 
 Usage:
     poetry run python scripts/email_waitlist.py \\
@@ -42,10 +39,10 @@ from pathlib import Path
 
 from milo_backend.core import (
     connect,
+    deliver_email,
     disconnect,
     get_database,
     get_settings,
-    queue_email,
 )
 
 WAITLIST_COLLECTION = "waitlist"
@@ -61,7 +58,6 @@ async def main() -> None:
 
     await connect(settings)
     try:
-
         database = get_database()
         waitlist = database[WAITLIST_COLLECTION]
         log = database[LOG_COLLECTION]
@@ -114,20 +110,26 @@ async def main() -> None:
                 print("Aborted.")
                 return
 
+        sent = 0
         for email in pending:
-            queue_email(
+            delivered = await deliver_email(
                 to=email,
                 subject=args.subject,
                 text_body=text_body,
                 html_body=html_body or text_body,
+                settings=settings,
             )
+            if not delivered:
+                print(f"  FAILED: {email}")
+                continue
+            sent += 1
             await log.update_one(
                 {"email": email, "subject": args.subject},
                 {"$setOnInsert": {"email": email, "subject": args.subject}},
                 upsert=True,
             )
 
-        print(f"Queued {len(pending)} email(s).")
+        print(f"Sent {sent} of {len(pending)} email(s).")
     finally:
         await disconnect()
 

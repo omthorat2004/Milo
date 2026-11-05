@@ -71,13 +71,6 @@ class Settings(BaseSettings):
     email_from_address: EmailStr = "no-reply@milo.app"
     email_from_name: str = "Milo"
 
-    celery_broker_url: str = "redis://127.0.0.1:6379/0"
-    celery_result_backend: str | None = None
-    # Dispatches a task inline instead of through the broker. Convenient so a
-    # fresh checkout doesn't need Redis running just to see a verification
-    # email; a real queue is required in production (see validator below).
-    celery_task_always_eager: bool | None = None
-
     otp_length: int = Field(default=6, ge=4, le=10)
     otp_expire_minutes: int = Field(default=10, ge=1, le=60)
     otp_max_attempts: int = Field(default=5, ge=1, le=20)
@@ -201,9 +194,6 @@ class Settings(BaseSettings):
                 EmailDelivery.SMTP if self.is_production else EmailDelivery.CONSOLE
             )
 
-        if self.celery_task_always_eager is None:
-            self.celery_task_always_eager = not self.is_production
-
         if self.ip_hash_salt is None:
             self.ip_hash_salt = SecretStr(secrets.token_urlsafe(32))
 
@@ -301,14 +291,6 @@ class Settings(BaseSettings):
             if self.smtp_credentials is None:
                 raise ValueError(
                     "SMTP_USERNAME and SMTP_PASSWORD are both required in production."
-                )
-
-            if self.celery_task_always_eager:
-                raise ValueError(
-                    "CELERY_TASK_ALWAYS_EAGER cannot be true in production. Eager mode "
-                    "runs the task inline on the request thread instead of through the "
-                    "broker, so a slow or down SMTP server would block every request "
-                    "that sends an email."
                 )
 
         return self

@@ -57,15 +57,15 @@ what lets `service/auth.py`'s business logic be unit tested without a running ap
 - `_security.py`, password hashing (argon2-cffi), OTP generation/hashing, JWT `create_token` /
   `decode_token`.
 - `_email.py`, `send_email`, backed by `aiosmtplib`; swaps to console-log delivery outside
-  production via `Settings.email_delivery`. Never called directly from `service`, see `_celery.py`.
-- `_celery.py`, `celery_app` and `queue_email()`. Every outbound email goes through a Celery task
-  (`milo.send_email`) instead of blocking the request on SMTP; `service/auth.py` calls
-  `queue_email(...)`, never `send_email(...)` directly. `Settings.celery_task_always_eager` defaults
-  to `true` outside production (the task runs inline, so a fresh checkout needs no Redis or worker
-  process to see a verification email) and is rejected at startup if `true` in production, there,
-  `CELERY_BROKER_URL` must point at a real Redis and `make worker-backend` must be running, or
-  queued emails never get picked up. The task retries up to 3 times (5s delay) on any delivery
-  exception, since a down SMTP server shouldn't lose the email outright.
+  production via `Settings.email_delivery`. Never called directly from `service`, use
+  `deliver_email()`.
+- `deliver_email()` (also in `_email.py`), awaits `send_email` inline and never raises: failures are
+  logged and it returns `False`. There is no queue or worker, because the API runs on Vercel
+  serverless where work scheduled after the response is frozen. Swallowing errors is deliberate:
+  password reset must return the same response whether or not delivery worked, and a failed
+  verification email is recoverable through the resend endpoint. The cost is that a slow SMTP
+  server adds up to `SMTP_TIMEOUT_SECONDS` to the request, and there is no automatic retry.
+  (Celery was removed for this reason.)
 - `_rate_limit.py`, the shared `slowapi` `Limiter` instance (`limiter`), keyed off caller IP by
   default; per-route limits are read from `Settings` at call time via a lambda, not hardcoded, so
   they're tunable per environment without a redeploy.
