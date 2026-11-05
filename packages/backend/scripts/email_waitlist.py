@@ -61,6 +61,7 @@ async def main() -> None:
 
     await connect(settings)
     try:
+
         database = get_database()
         waitlist = database[WAITLIST_COLLECTION]
         log = database[LOG_COLLECTION]

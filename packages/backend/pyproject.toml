@@ -48,3 +48,6 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.vercel]
+entrypoint = "src.milo_backend.app:app"
