@@ -207,14 +207,37 @@ export function AppNav({ resourceId }: Props) {
           <Link href="/dashboard" aria-label="Milo dashboard" className="text-foreground">
             <MiloMark className="size-9" />
           </Link>
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-label="Open sidebar"
-            className="mt-6 flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-          >
+
+          <RailButton label="Open sidebar" onClick={toggleSidebar} className="mt-6">
             <PanelLeftOpen className="size-4" aria-hidden="true" />
-          </button>
+          </RailButton>
+
+          <nav className="mt-6 flex flex-col items-center gap-1" aria-label="Application">
+            {resourceId ? (
+              <RailLink href="/links" label="All links">
+                <ArrowLeft className="size-4" aria-hidden="true" />
+              </RailLink>
+            ) : null}
+            {items.map((item) => (
+              <RailLink
+                key={item.segment}
+                href={hrefFor(item.segment, resourceId)}
+                label={item.label}
+                active={isActive(item.segment)}
+              >
+                <item.icon className="size-4" aria-hidden="true" />
+              </RailLink>
+            ))}
+          </nav>
+
+          <div className="mt-auto flex flex-col items-center gap-1 border-t border-surface-border pt-4">
+            <RailLink href={PROFILE_HREF} label="Profile" active={profileActive}>
+              <User className="size-4" aria-hidden="true" />
+            </RailLink>
+            <RailButton label="Log out" onClick={() => logout.mutate()} disabled={logout.isPending}>
+              <LogOut className="size-4" aria-hidden="true" />
+            </RailButton>
+          </div>
         </aside>
       ) : null}
 
@@ -262,5 +285,83 @@ export function AppNav({ resourceId }: Props) {
         })}
       </nav>
     </>
+  );
+}
+
+const railIconClass =
+  "flex size-9 items-center justify-center rounded-lg transition-colors disabled:pointer-events-none disabled:opacity-55";
+
+/** The label that appears to the right of a rail icon on hover or keyboard focus. */
+function RailTooltip({ label }: { label: string }) {
+  return (
+    <span
+      role="tooltip"
+      className="pointer-events-none absolute top-1/2 left-full ml-3 -translate-y-1/2 rounded-md border border-surface-border bg-surface px-2.5 py-1 text-xs whitespace-nowrap text-foreground opacity-0 shadow-lg transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+    >
+      {label}
+    </span>
+  );
+}
+
+function RailLink({
+  href,
+  label,
+  active = false,
+  children,
+}: {
+  href: string;
+  label: string;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="group relative">
+      <Link
+        href={href}
+        aria-label={label}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          railIconClass,
+          active
+            ? "bg-surface text-foreground"
+            : "text-foreground-muted hover:bg-surface-hover hover:text-foreground",
+        )}
+      >
+        {children}
+      </Link>
+      <RailTooltip label={label} />
+    </span>
+  );
+}
+
+function RailButton({
+  label,
+  onClick,
+  disabled,
+  className,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className={cn("group relative", className)}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        className={cn(
+          railIconClass,
+          "text-foreground-muted hover:bg-surface-hover hover:text-foreground",
+        )}
+      >
+        {children}
+      </button>
+      <RailTooltip label={label} />
+    </span>
   );
 }
