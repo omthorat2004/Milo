@@ -203,14 +203,19 @@ export function AppNav({ resourceId }: Props) {
       </aside>
 
       {collapsed ? (
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          aria-label="Open sidebar"
-          className="fixed top-4 left-4 z-40 hidden size-9 items-center justify-center rounded-full border border-surface-border bg-background/80 text-foreground-muted backdrop-blur-md transition-colors hover:text-foreground lg:flex"
-        >
-          <PanelLeftOpen className="size-4" aria-hidden="true" />
-        </button>
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-16 flex-col items-center border-r border-surface-border bg-background/60 py-6 lg:flex">
+          <Link href="/dashboard" aria-label="Milo dashboard" className="text-foreground">
+            <MiloMark className="size-9" />
+          </Link>
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Open sidebar"
+            className="mt-6 flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            <PanelLeftOpen className="size-4" aria-hidden="true" />
+          </button>
+        </aside>
       ) : null}
 
       {resourceId ? (
