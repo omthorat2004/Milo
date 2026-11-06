@@ -396,7 +396,8 @@ async def test_record_dwell_updates_the_matching_view_event(
 
     recorded = await events.list_by_link(link.id)
     assert len(recorded) == 1
-    assert recorded[0].page_number == 2
+    # The view stays page 1: later pages are their own `page_view` events.
+    assert recorded[0].page_number == 1
     assert recorded[0].dwell_time_seconds == 45.0
 
 
@@ -423,3 +424,105 @@ async def test_record_dwell_unmatched_visit_noops(
     )
 
     assert await events.list_by_link(link.id) == []
+
+
+async def _seed_view(resumes, links, events, slug: str, visit_id: str = "v1"):
+    resume = await _resume(resumes)
+    link = await links.create(
+        resume_id=resume.id,
+        owner_id=OWNER,
+        slug=slug,
+        now=datetime.now(UTC),
+        expires_at=None,
+    )
+    assert link is not None
+    await events.create(
+        link_id=link.id,
+        resume_id=resume.id,
+        event_type=EventType.VIEW,
+        occurred_at=datetime.now(UTC),
+        session_id="s1",
+        device_category="desktop",
+        browser="Safari",
+        os="macOS",
+        referrer_domain="linkedin.com",
+        utm_source=None,
+        utm_medium=None,
+        utm_campaign=None,
+        page_number=1,
+        dwell_time_seconds=None,
+        visit_id=visit_id,
+    )
+    return link
+
+
+async def test_record_page_view_adds_its_own_event(
+    service: LinkService,
+    resumes: FakeResumeDAO,
+    links: FakeTrackingLinkDAO,
+    events: FakeAnalyticsEventDAO,
+) -> None:
+    link = await _seed_view(resumes, links, events, "page1")
+
+    await service.record_page_view(
+        slug="page1",
+        visit_id="v1",
+        session_id="s1",
+        device_category="desktop",
+        browser="Safari",
+        os="macOS",
+        page_number=2,
+    )
+
+    recorded = await events.list_by_link(link.id)
+    assert [e.event_type for e in recorded] == [EventType.VIEW, EventType.PAGE_VIEW]
+    assert recorded[1].page_number == 2
+    assert recorded[1].referrer_domain == "linkedin.com"
+
+
+async def test_record_page_view_is_recorded_once_per_page_per_visit(
+    service: LinkService,
+    resumes: FakeResumeDAO,
+    links: FakeTrackingLinkDAO,
+    events: FakeAnalyticsEventDAO,
+) -> None:
+    link = await _seed_view(resumes, links, events, "page2")
+    for _ in range(3):
+        await service.record_page_view(
+            slug="page2",
+            visit_id="v1",
+            session_id="s1",
+            device_category=None,
+            browser=None,
+            os=None,
+            page_number=2,
+        )
+    assert len(await events.list_by_link(link.id)) == 2
+
+
+async def test_record_page_view_ignores_page_one_and_unknown_visits(
+    service: LinkService,
+    resumes: FakeResumeDAO,
+    links: FakeTrackingLinkDAO,
+    events: FakeAnalyticsEventDAO,
+) -> None:
+    link = await _seed_view(resumes, links, events, "page3")
+    await service.record_page_view(
+        slug="page3",
+        visit_id="v1",
+        session_id=None,
+        device_category=None,
+        browser=None,
+        os=None,
+        page_number=1,
+    )
+    await service.record_page_view(
+        slug="page3",
+        visit_id="other",
+        session_id=None,
+        device_category=None,
+        browser=None,
+        os=None,
+        page_number=2,
+    )
+    assert len(await events.list_by_link(link.id)) == 1

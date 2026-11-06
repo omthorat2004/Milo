@@ -301,7 +301,6 @@ class FakeAnalyticsEventDAO:
         *,
         visit_id: str,
         link_id: str,
-        page_number: int | None,
         dwell_seconds: float,
     ) -> bool:
         for index, event in enumerate(self._events):
@@ -311,13 +310,33 @@ class FakeAnalyticsEventDAO:
                 and event.event_type == EventType.VIEW
             ):
                 self._events[index] = event.model_copy(
-                    update={
-                        "page_number": page_number,
-                        "dwell_time_seconds": dwell_seconds,
-                    }
+                    update={"dwell_time_seconds": dwell_seconds}
                 )
                 return True
         return False
+
+    async def find_visit_view(
+        self, *, visit_id: str, link_id: str
+    ) -> AnalyticsEvent | None:
+        for event in self._events:
+            if (
+                event.visit_id == visit_id
+                and event.link_id == link_id
+                and event.event_type == EventType.VIEW
+            ):
+                return event
+        return None
+
+    async def page_view_exists(
+        self, *, visit_id: str, link_id: str, page_number: int
+    ) -> bool:
+        return any(
+            event.visit_id == visit_id
+            and event.link_id == link_id
+            and event.event_type == EventType.PAGE_VIEW
+            and event.page_number == page_number
+            for event in self._events
+        )
 
     async def list_by_link(
         self, link_id: str, *, limit: int = 500

@@ -198,12 +198,66 @@ class LinkService:
             await self.events.update_dwell(
                 visit_id=visit_id,
                 link_id=link.id,
-                page_number=page_number,
                 dwell_seconds=dwell_seconds,
             )
         except Exception:
             logger.warning(
                 "Failed to record dwell beacon for link %s", link.id, exc_info=True
+            )
+
+    async def record_page_view(
+        self,
+        *,
+        slug: str,
+        visit_id: str,
+        session_id: str | None,
+        device_category: str | None,
+        browser: str | None,
+        os: str | None,
+        page_number: int,
+    ) -> None:
+        """A visitor moved on to page 2 or later. Its own `page_view` event, so the
+        `view` (page 1) count is untouched. Best-effort and idempotent: a page
+        already recorded for this visit, an unknown visit, or a link that is gone
+        or no longer open, is a silent no-op."""
+        if page_number < 2:
+            return
+        link = await self.links.get_by_slug(slug)
+        if link is None or link.revoked_at is not None:
+            return
+        if link.expires_at is not None and _as_utc(link.expires_at) <= datetime.now(
+            UTC
+        ):
+            return
+
+        try:
+            view = await self.events.find_visit_view(visit_id=visit_id, link_id=link.id)
+            if view is None:
+                return
+            if await self.events.page_view_exists(
+                visit_id=visit_id, link_id=link.id, page_number=page_number
+            ):
+                return
+            await self.events.create(
+                link_id=link.id,
+                resume_id=link.resume_id,
+                event_type=EventType.PAGE_VIEW,
+                occurred_at=datetime.now(UTC),
+                session_id=session_id or view.session_id,
+                device_category=device_category or view.device_category,
+                browser=browser or view.browser,
+                os=os or view.os,
+                referrer_domain=view.referrer_domain,
+                utm_source=view.utm_source,
+                utm_medium=view.utm_medium,
+                utm_campaign=view.utm_campaign,
+                page_number=page_number,
+                dwell_time_seconds=None,
+                visit_id=visit_id,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to record page view for link %s", link.id, exc_info=True
             )
 
     async def list_events_for_link(

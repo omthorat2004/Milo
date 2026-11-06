@@ -21,6 +21,15 @@ class DwellBeaconRequest(BaseModel):
     dwell_seconds: float = Field(gt=0, le=24 * 60 * 60)
 
 
+class PageViewRequest(BaseModel):
+    visit_id: str = Field(min_length=1, max_length=128)
+    page_number: int = Field(ge=2, le=1000)
+    session_id: str | None = Field(default=None, max_length=128)
+    device_category: str | None = Field(default=None, max_length=32)
+    browser: str | None = Field(default=None, max_length=64)
+    os: str | None = Field(default=None, max_length=64)
+
+
 class TrackingLinkResponse(BaseModel):
     id: str
     slug: str

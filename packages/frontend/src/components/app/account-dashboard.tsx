@@ -78,7 +78,12 @@ export function AccountDashboard() {
                   className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm"
                 >
                   <span className="min-w-0 truncate text-foreground">
-                    {event.event_type === "download" ? "Download" : "View"} ·{" "}
+                    {event.event_type === "download"
+                      ? "Download"
+                      : event.event_type === "page_view"
+                        ? `Page ${event.page_number ?? ""} view`
+                        : "View"}{" "}
+                    ·{" "}
                     <Link
                       href={`/${linkSlug(event.link_id)}/dashboard`}
                       className="hover:text-signal-400"

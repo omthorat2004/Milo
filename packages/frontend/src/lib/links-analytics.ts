@@ -87,7 +87,7 @@ export function pageEngagement(events: AnalyticsEvent[]): PageEngagement[] {
   const byPage = new Map<number, { views: number; dwellTotal: number; dwellCount: number }>();
 
   for (const event of events) {
-    if (event.event_type !== "view" || event.page_number === null) continue;
+    if (event.event_type === "download" || event.page_number === null) continue;
     const entry = byPage.get(event.page_number) ?? { views: 0, dwellTotal: 0, dwellCount: 0 };
     entry.views += 1;
     if (event.dwell_time_seconds !== null) {

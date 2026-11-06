@@ -12,6 +12,7 @@ from milo_backend.schemas.analytics_event import AnalyticsEventResponse
 from milo_backend.schemas.tracking_link import (
     CreateTrackingLinkRequest,
     DwellBeaconRequest,
+    PageViewRequest,
     TrackingLinkResponse,
     UpdateTrackingLinkRequest,
 )
@@ -182,6 +183,28 @@ async def record_dwell_beacon(
         visit_id=payload.visit_id,
         page_number=payload.page_number,
         dwell_seconds=payload.dwell_seconds,
+    )
+
+
+@router.post("/l/{slug}/page", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(lambda: get_settings().rate_limit_dwell_beacon)
+async def record_page_view(
+    request: Request,
+    response: Response,
+    slug: str,
+    payload: PageViewRequest,
+    service: LinkServiceDep,
+) -> None:
+    """Sent when the viewer turns to page 2 or later: one `page_view` event per
+    page per visit. Best-effort, always 204."""
+    await service.record_page_view(
+        slug=slug,
+        visit_id=payload.visit_id,
+        session_id=payload.session_id,
+        device_category=payload.device_category,
+        browser=payload.browser,
+        os=payload.os,
+        page_number=payload.page_number,
     )
 
 

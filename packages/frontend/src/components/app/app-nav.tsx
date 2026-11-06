@@ -11,10 +11,18 @@ import { ThemeToggle } from "@milo/ui/theme";
 
 const PROFILE_HREF = "/account";
 
-const items = [
-  { segment: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { segment: "links", label: "Links", icon: FileText },
-  { segment: "logs", label: "Logs", icon: ScrollText },
+// The same three pages exist at two levels, so the labels say which one you are on:
+// across the whole account (no resource id) or for one link.
+const accountItems = [
+  { segment: "dashboard", label: "Overview", icon: LayoutDashboard },
+  { segment: "links", label: "My links", icon: FileText },
+  { segment: "logs", label: "Activity", icon: ScrollText },
+] as const;
+
+const linkItems = [
+  { segment: "dashboard", label: "Link dashboard", icon: LayoutDashboard },
+  { segment: "links", label: "Link details", icon: FileText },
+  { segment: "logs", label: "Link activity", icon: ScrollText },
 ] as const;
 
 type Props = {
@@ -28,6 +36,7 @@ function hrefFor(segment: string, resourceId?: string): string {
 export function AppNav({ resourceId }: Props) {
   const pathname = usePathname();
   const logout = useLogoutMutation();
+  const items = resourceId ? linkItems : accountItems;
 
   const isActive = (segment: string) => {
     const href = hrefFor(segment, resourceId);

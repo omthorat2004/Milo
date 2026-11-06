@@ -5,7 +5,7 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { detectBrowser, detectDeviceCategory, detectOS } from "@/lib/device-info";
-import { sendDwellBeacon } from "@/lib/links.api";
+import { sendDwellBeacon, sendPageView } from "@/lib/links.api";
 import { cn } from "@/lib/utils";
 
 const SESSION_STORAGE_KEY = "milo_viewer_session_id";
@@ -88,6 +88,10 @@ export function ResumeViewer({ slug }: { slug: string }) {
   const pdfDocRef = useRef<PDFDocumentProxy | null>(null);
   const loadingTaskRef = useRef<PDFDocumentLoadingTask | null>(null);
   const currentPageRef = useRef(1);
+  // One id per page load. It ties this visit's view, its later page views and its dwell time together.
+  const visitIdRef = useRef<string>("");
+  const sessionIdRef = useRef<string | null>(null);
+  const reportedPagesRef = useRef<Set<number>>(new Set([1]));
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
 
   const [status, setStatus] = useState<Status>("loading");
@@ -171,6 +175,10 @@ export function ResumeViewer({ slug }: { slug: string }) {
     const controller = new AbortController();
     startedAtRef.current = Date.now();
     const sessionId = getOrCreateSessionId();
+    const visitId = crypto.randomUUID();
+    visitIdRef.current = visitId;
+    sessionIdRef.current = sessionId;
+    reportedPagesRef.current = new Set([1]);
 
     const params = new URLSearchParams();
     if (sessionId) params.set("sid", sessionId);
@@ -178,6 +186,7 @@ export function ResumeViewer({ slug }: { slug: string }) {
     params.set("browser", detectBrowser(navigator.userAgent));
     params.set("os", detectOS(navigator.userAgent));
     params.set("page_number", "1");
+    params.set("visit_id", visitId);
     const query = params.toString();
 
     const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -236,7 +245,7 @@ export function ResumeViewer({ slug }: { slug: string }) {
       if (dwellSeconds < 1) return;
 
       sendDwellBeacon(slug, {
-        sessionId,
+        visitId,
         pageNumber: currentPageRef.current,
         dwellSeconds,
       });
@@ -258,6 +267,22 @@ export function ResumeViewer({ slug }: { slug: string }) {
       void loadingTaskRef.current?.destroy();
     };
   }, [slug]);
+
+  // Turning to page 2 or later is its own event, once per page per visit. Page 1 is the
+  // view itself, recorded when the document is fetched.
+  useEffect(() => {
+    if (status !== "ready" || currentPage < 2) return;
+    if (reportedPagesRef.current.has(currentPage)) return;
+    reportedPagesRef.current.add(currentPage);
+    sendPageView(slug, {
+      visitId: visitIdRef.current,
+      sessionId: sessionIdRef.current,
+      pageNumber: currentPage,
+      deviceCategory: detectDeviceCategory(navigator.userAgent),
+      browser: detectBrowser(navigator.userAgent),
+      os: detectOS(navigator.userAgent),
+    });
+  }, [status, currentPage, slug]);
 
   useEffect(() => {
     if (status !== "ready") return;

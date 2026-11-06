@@ -16,7 +16,7 @@ export type TrackingLink = {
 
 export type CreateLinkInput = { expires_in_days?: number | null };
 
-export type AnalyticsEventType = "view" | "download";
+export type AnalyticsEventType = "view" | "download" | "page_view";
 
 export type AnalyticsEvent = {
   id: string;
@@ -81,10 +81,38 @@ export async function updateLinkExpiry(
 }
 
 export type DwellBeaconInput = {
-  sessionId: string | null;
+  visitId: string;
   pageNumber: number | null;
   dwellSeconds: number;
 };
+
+export type PageViewInput = {
+  visitId: string;
+  sessionId: string | null;
+  pageNumber: number;
+  deviceCategory: string;
+  browser: string;
+  os: string;
+};
+
+/** The viewer turned to page 2 or later: its own `page_view` event, once per page per visit.
+ * `keepalive` so it still goes if the tab closes right after; a failure is dropped. */
+export function sendPageView(slug: string, input: PageViewInput): void {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+  void fetch(`${baseUrl}/l/${slug}/page`, {
+    method: "POST",
+    keepalive: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      visit_id: input.visitId,
+      session_id: input.sessionId,
+      page_number: input.pageNumber,
+      device_category: input.deviceCategory,
+      browser: input.browser,
+      os: input.os,
+    }),
+  }).catch(() => undefined);
+}
 
 /**
  * Fire-and-forget via `navigator.sendBeacon`, survives the tab closing,
@@ -96,7 +124,7 @@ export function sendDwellBeacon(slug: string, input: DwellBeaconInput): void {
   if (typeof navigator === "undefined" || typeof navigator.sendBeacon !== "function") return;
 
   const body = JSON.stringify({
-    session_id: input.sessionId,
+    visit_id: input.visitId,
     page_number: input.pageNumber,
     dwell_seconds: input.dwellSeconds,
   });

@@ -84,7 +84,6 @@ class AnalyticsEventDAO(BaseDAO):
         *,
         visit_id: str,
         link_id: str,
-        page_number: int | None,
         dwell_seconds: float,
     ) -> bool:
         """Attaches dwell data to the view event this visit already created,
@@ -102,9 +101,43 @@ class AnalyticsEventDAO(BaseDAO):
                 "link_id": identifier,
                 "event_type": EventType.VIEW.value,
             },
-            {"$set": {"page_number": page_number, "dwell_time_seconds": dwell_seconds}},
+            {"$set": {"dwell_time_seconds": dwell_seconds}},
         )
         return result.matched_count > 0
+
+    async def find_visit_view(
+        self, *, visit_id: str, link_id: str
+    ) -> AnalyticsEvent | None:
+        """The `view` event a visit created, which later events of that visit copy
+        their referrer and campaign from."""
+        identifier = _object_id(link_id)
+        if identifier is None:
+            return None
+        document = await self.collection.find_one(
+            {
+                "visit_id": visit_id,
+                "link_id": identifier,
+                "event_type": EventType.VIEW.value,
+            }
+        )
+        return _as_event(document) if document else None
+
+    async def page_view_exists(
+        self, *, visit_id: str, link_id: str, page_number: int
+    ) -> bool:
+        identifier = _object_id(link_id)
+        if identifier is None:
+            return False
+        found = await self.collection.find_one(
+            {
+                "visit_id": visit_id,
+                "link_id": identifier,
+                "event_type": EventType.PAGE_VIEW.value,
+                "page_number": page_number,
+            },
+            projection={"_id": 1},
+        )
+        return found is not None
 
     async def list_by_link(
         self, link_id: str, *, limit: int = 500

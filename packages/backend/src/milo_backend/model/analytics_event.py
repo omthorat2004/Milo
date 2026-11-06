@@ -9,6 +9,9 @@ from pydantic import BaseModel
 class EventType(StrEnum):
     VIEW = "view"
     DOWNLOAD = "download"
+    # The visitor moved on to a later page of the resume (page 2 and up). Page 1
+    # is the `view` itself, so this never changes the view count.
+    PAGE_VIEW = "page_view"
 
 
 class AnalyticsEvent(BaseModel):
