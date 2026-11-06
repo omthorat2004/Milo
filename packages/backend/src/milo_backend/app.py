@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
         allow_credentials=settings.cors_allow_credentials,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "Authorization"],
-        expose_headers=["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
+        expose_headers=["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Date"],
     )
 
     if settings.rate_limit_enabled:

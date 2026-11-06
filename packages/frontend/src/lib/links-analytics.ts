@@ -352,8 +352,24 @@ export function parseEventTime(iso: string): Date {
   return new Date(hasZone ? iso : `${iso}Z`);
 }
 
+/** How far the server's clock is ahead of this browser's, in ms. Event times
+ * are server time, so "5h ago" is measured against the server's "now" and a
+ * wrong clock or time zone on the viewer's machine cannot skew it. Taken from
+ * the `Date` header of API responses; 0 until the first one arrives. */
+let serverClockOffsetMs = 0;
+
+export function setServerClock(dateHeader: string | null | undefined): void {
+  if (!dateHeader) return;
+  const server = Date.parse(dateHeader);
+  if (!Number.isNaN(server)) serverClockOffsetMs = server - Date.now();
+}
+
+export function serverNow(): number {
+  return Date.now() + serverClockOffsetMs;
+}
+
 export function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - parseEventTime(iso).getTime();
+  const diffMs = serverNow() - parseEventTime(iso).getTime();
   const minutes = Math.round(diffMs / (60 * 1000));
 
   if (minutes < 1) return "just now";

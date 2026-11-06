@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
+import { setServerClock } from "@/lib/links-analytics";
 import { useAuthStore } from "@/stores/auth-store";
 
 declare module "axios" {
@@ -33,7 +34,10 @@ function refreshSession(): Promise<unknown> {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    setServerClock(response.headers?.date as string | undefined);
+    return response;
+  },
   async (error: AxiosError) => {
     const config = error.config as RetryConfig | undefined;
     const canRetry =
