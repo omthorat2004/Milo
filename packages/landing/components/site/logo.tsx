@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
  */
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true" fill="none">
+    <span className={cn("inline-flex items-center gap-3", className)}>
+      <svg viewBox="0 0 24 24" className="size-9" aria-hidden="true" fill="none">
         <path
           d="M6 3h8l4 4v14H6z"
           stroke="currentColor"
@@ -19,7 +19,7 @@ export function Logo({ className }: { className?: string }) {
         <circle cx="12" cy="14" r="2" className="fill-signal-400" />
         <circle cx="12" cy="14" r="4.6" className="stroke-signal-400/45" strokeWidth="1" />
       </svg>
-      <span className="font-display text-lg tracking-tight text-foreground">Milo</span>
+      <span className="font-display text-4xl tracking-tight text-foreground">Milo</span>
     </span>
   );
 }

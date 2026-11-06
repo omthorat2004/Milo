@@ -24,7 +24,7 @@ export function MarketingHeader() {
         <Link href="/" aria-label="Milo home" className="inline-flex items-center gap-2.5">
           <svg
             viewBox="0 0 24 24"
-            className="size-5 text-foreground"
+            className="size-8 text-foreground"
             aria-hidden="true"
             fill="none"
           >
@@ -38,7 +38,7 @@ export function MarketingHeader() {
             <path d="M14 3v4h4" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
             <circle cx="12" cy="14" r="2" className="fill-signal-400" />
           </svg>
-          <span className="font-display text-lg tracking-tight text-foreground">Milo</span>
+          <span className="font-display text-3xl tracking-tight text-foreground">Milo</span>
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Primary">
@@ -63,7 +63,13 @@ export function MarketingHeader() {
         <div className="flex items-center gap-2">
           <ThemeToggle className="flex size-9 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground" />
 
-          {isLoading ? null : isAuthenticated ? (
+          {isLoading ? (
+            // Same height and about the same width as the buttons, so nothing moves when they arrive.
+            <div className="flex items-center gap-2" aria-hidden="true">
+              <div className="hidden h-9 w-16 animate-pulse rounded-full bg-surface-hover sm:block" />
+              <div className="h-9 w-28 animate-pulse rounded-full bg-surface-hover" />
+            </div>
+          ) : isAuthenticated ? (
             <Button href="/dashboard" size="sm">
               Dashboard
             </Button>

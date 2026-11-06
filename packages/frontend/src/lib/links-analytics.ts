@@ -343,8 +343,17 @@ export function formatDwell(seconds: number): string {
   return minutes > 0 ? `${minutes}m ${rest}s` : `${rest}s`;
 }
 
+/** The API sends event times as UTC but, from MongoDB, without a "Z" or an
+ * offset. `new Date("2026-11-06T01:30:00")` reads that as LOCAL time, which
+ * shifts every event by the viewer's UTC offset (8 hours off in California:
+ * a 13-hour-old event read "5h ago"). A time with no zone is UTC. */
+export function parseEventTime(iso: string): Date {
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(iso);
+  return new Date(hasZone ? iso : `${iso}Z`);
+}
+
 export function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMs = Date.now() - parseEventTime(iso).getTime();
   const minutes = Math.round(diffMs / (60 * 1000));
 
   if (minutes < 1) return "just now";
@@ -361,7 +370,7 @@ export function formatRelativeTime(iso: string): string {
  * page promises "everything Milo knows about a view is on this page," and
  * a relative label like "2h ago" alone can't answer "when, exactly." */
 export function formatExactTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return parseEventTime(iso).toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "medium",
   });
