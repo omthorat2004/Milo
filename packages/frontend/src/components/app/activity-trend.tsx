@@ -19,8 +19,7 @@ export function ActivityTrend({ events }: { events: AnalyticsEvent[] }) {
   // other regardless of how many points the range has (24 hourly, 30 daily, 12 monthly, ...).
   const maxLabels = 6;
   const labelStep = Math.max(1, Math.ceil(points.length / maxLabels));
-  const showLabel = (index: number) =>
-    index % labelStep === 0 || index === points.length - 1;
+  const showLabel = (index: number) => index % labelStep === 0 || index === points.length - 1;
 
   return (
     <section className="rounded-card border border-surface-border bg-surface/60 p-5">

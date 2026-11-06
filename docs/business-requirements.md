@@ -59,10 +59,6 @@ writing:
   [database-schema.md](./database-schema.md)), only a server-side aggregation query and route are
   missing, which matters once the event volume for a popular link outgrows "fetch everything and
   reduce in the browser."
-- **True per-PDF-page dwell tracking**: the dwell-time beacon exists (`POST /l/{slug}/dwell`, fed by
-  `components/app/resume-viewer.tsx` via `navigator.sendBeacon`), but the frontend has no
-  in-browser PDF renderer (no pdf.js), it's whole-document dwell time, `page_number` always `1`,
-  not real per-page attention.
 
 Resumes, tracking links, and link resolution (including fetch-with-retry and expiry/revocation
 checks) are now built, see the `packages/backend` row above and

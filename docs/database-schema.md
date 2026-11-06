@@ -110,7 +110,7 @@ on.
 | `referrer_domain` | string \| null | hostname only, parsed server-side from the `Referer` header, the full URL (which can carry query-string identity) is never stored |
 | `utm_source`, `utm_medium`, `utm_campaign` | string \| null | |
 | `page_number` | int \| null | |
-| `dwell_time_seconds` | float \| null | not yet populated by any route, reserved for a future "viewer left the tab open" beacon |
+| `dwell_time_seconds` | float \| null | seconds on this event's page, set by the dwell beacon when the viewer closes the tab (null if the page was on screen under a second, or the beacon never arrived) |
 
 **Indexes:** compound on `(link_id, occurred_at desc)` (`idx_event_link_occurred_at`), for the
 eventual per-link dashboard query.

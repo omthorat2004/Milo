@@ -179,27 +179,29 @@ class LinkService:
         *,
         slug: str,
         visit_id: str,
-        page_number: int | None,
-        dwell_seconds: float,
+        page_dwell: dict[int, float],
     ) -> None:
         """Best-effort: sent via `navigator.sendBeacon`, so there is no response
         the caller can act on. A link that's gone, expired, or revoked by the
         time the beacon arrives is a benign race (the viewer was already
         reading it), this silently no-ops rather than raising.
 
-        Updates the view event this visit already created (matched by
-        visit_id) instead of inserting a new row: a visit is one `view`, not
-        a `view` plus a separate `dwell` row double-counted as two."""
+        `page_dwell` maps page number to seconds spent on it. Each value lands on
+        the event that page already has (page 1 is the visit's `view`, later pages
+        their own `page_view`) instead of inserting new rows: a visit's time is
+        never double-counted as extra events. A page with no event is skipped."""
         link = await self.links.get_by_slug(slug)
         if link is None:
             return
 
         try:
-            await self.events.update_dwell(
-                visit_id=visit_id,
-                link_id=link.id,
-                dwell_seconds=dwell_seconds,
-            )
+            for page_number, dwell_seconds in page_dwell.items():
+                await self.events.update_page_dwell(
+                    visit_id=visit_id,
+                    link_id=link.id,
+                    page_number=page_number,
+                    dwell_seconds=dwell_seconds,
+                )
         except Exception:
             logger.warning(
                 "Failed to record dwell beacon for link %s", link.id, exc_info=True

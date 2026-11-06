@@ -93,7 +93,7 @@ All request/response fields are defined in `schemas/resume.py` and `schemas/trac
 | `GET /events` | yes | N/A | 200 `list[AnalyticsEventResponse]`, across every link you own, newest first | N/A |
 | `DELETE /links/{link_id}` | yes | N/A | 204 |, (silently no-ops if the link isn't yours, same as revoking something already gone) |
 | `GET /l/{slug}` | no | query: `sid`, `device_category`, `browser`, `os`, `utm_source`, `utm_medium`, `utm_campaign`, `page_number`, `download` | 200, streams the resume document with the original `Content-Type` | `tracking_link_not_found`, `tracking_link_expired` (checked *before* any fetch, so an expired link never triggers a network call or a retry), `tracking_link_revoked`, `resume_fetch_failed` (after exhausting `resume_fetch_max_retries` retries on a transient failure, or immediately on a non-retryable 4xx/oversized body) |
-| `POST /l/{slug}/dwell` | no | `{session_id?, page_number?, dwell_seconds}` | 204, always, even for an unknown/expired/revoked slug |, (best-effort; fed by `navigator.sendBeacon`, which never reads the response) |
+| `POST /l/{slug}/dwell` | no | `{visit_id, pages: [{page_number, dwell_seconds}]}` | 204, always, even for an unknown/expired/revoked slug |, (best-effort; fed by `navigator.sendBeacon`, which never reads the response) |
 
 `POST /resumes` and `PATCH /resumes/{resume_id}` (when `source_url` changes) now fetch the URL at
 submission time and reject it unless the response's `Content-Type` is `application/pdf`, the same
@@ -113,12 +113,18 @@ the candidate's externally-hosted document (with retry on transient 5xx/transpor
 read server-side from the `Referer` header (hostname only), not trusted from a query param.
 
 `POST /l/{slug}/dwell` is the dwell-time beacon: `packages/frontend`'s public `/l/[slug]` viewer page
-(`components/app/resume-viewer.tsx`) calls it via `navigator.sendBeacon` when the tab is hidden or
-unloaded, reporting how long the page was open. There is no in-browser PDF renderer in the frontend
-(no pdf.js), so `page_number` is always `1` today, this records whole-document dwell time, not true
-per-PDF-page attention. A link that's since expired or been revoked still records a `view` event for
-this (the viewer was already reading it when the beacon fires; this is treated as a benign race, not
-an error) rather than raising, there is no response for the client to act on anyway.
+(`components/app/resume-viewer.tsx`) calls it once per visit via `navigator.sendBeacon`, when the tab
+closes or the viewer unmounts. The viewer times each page separately (only the page on screen, only
+while the tab is visible) and sends the whole map, so `pages` holds the seconds spent on every page of
+that visit. Each value is written onto the event that page already has (page 1 on the visit's `view`,
+later pages on their `page_view`), matched by `visit_id` and `page_number`; no rows are inserted, and a
+page with no event is skipped. The totals are cumulative, so a repeated beacon overwrites rather than
+adds. A link that's since expired or been revoked still accepts it (the viewer was already reading it
+when the beacon fires; a benign race, not an error), there is no response for the client to act on.
+
+Events returned by `GET /events` and `GET /links/{id}/events` include `visit_id`, a random id per page
+load shared by the events of one visit. It lets the dashboard add up a visit's time across pages; it
+identifies a page load, never a person.
 
 ### Resume fetching and retries
 

@@ -33,6 +33,8 @@ export type AnalyticsEvent = {
   utm_campaign: string | null;
   page_number: number | null;
   dwell_time_seconds: number | null;
+  /** One id per page load, shared by every event of that visit. Null on old events. */
+  visit_id: string | null;
 };
 
 export async function createLink(
@@ -82,8 +84,8 @@ export async function updateLinkExpiry(
 
 export type DwellBeaconInput = {
   visitId: string;
-  pageNumber: number | null;
-  dwellSeconds: number;
+  /** Seconds spent on each page of this visit. */
+  pages: { pageNumber: number; dwellSeconds: number }[];
 };
 
 export type PageViewInput = {
@@ -125,8 +127,10 @@ export function sendDwellBeacon(slug: string, input: DwellBeaconInput): void {
 
   const body = JSON.stringify({
     visit_id: input.visitId,
-    page_number: input.pageNumber,
-    dwell_seconds: input.dwellSeconds,
+    pages: input.pages.map((page) => ({
+      page_number: page.pageNumber,
+      dwell_seconds: page.dwellSeconds,
+    })),
   });
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
   navigator.sendBeacon(

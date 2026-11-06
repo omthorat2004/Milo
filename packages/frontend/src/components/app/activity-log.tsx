@@ -12,6 +12,7 @@ import {
   formatExactTime,
   formatReferrerLine,
   formatRelativeTime,
+  visitTimes,
 } from "@/lib/links-analytics";
 import type { AnalyticsEvent } from "@/lib/links.api";
 
@@ -33,6 +34,8 @@ export function ActivityLog({ events, linkTitleFor, loading = false }: Props) {
   const sorted = [...events].sort(
     (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
   );
+  // Total time of each visit across all its pages, shown on the visit's first row.
+  const visits = visitTimes(events);
   const { page, pageCount, pageItems: pageEvents, setPage } = usePagination(sorted, PAGE_SIZE);
 
   if (loading) {
@@ -99,6 +102,17 @@ export function ActivityLog({ events, linkTitleFor, loading = false }: Props) {
                   </span>
                 ) : null}
               </p>
+              {event.event_type === "view" && event.visit_id !== null
+                ? (() => {
+                    const visit = visits.get(event.visit_id);
+                    return visit ? (
+                      <p className="mt-0.5 truncate text-xs text-signal-400">
+                        Visit total {formatDwell(visit.seconds)} across {visit.pages}{" "}
+                        {visit.pages === 1 ? "page" : "pages"}
+                      </p>
+                    ) : null;
+                  })()
+                : null}
               {linkTitleFor ? (
                 <p className="mt-0.5 truncate text-xs text-foreground">
                   {linkTitleFor(event.link_id)}

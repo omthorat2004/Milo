@@ -9,9 +9,10 @@ import { EmptyState } from "@/components/app/empty-state";
 import { LinkStatusBadge } from "@/components/app/link-status-badge";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
+import { SummaryCards } from "@/components/app/summary-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLinkBySlugQuery, useLinkEventsQuery } from "@/hooks/use-link-queries";
-import { computeSummary, formatRelativeTime } from "@/lib/links-analytics";
+import { formatRelativeTime } from "@/lib/links-analytics";
 import { linkStatus } from "@/lib/links.api";
 
 export function LinkDashboard({ slug }: { slug: string }) {
@@ -42,20 +43,9 @@ export function LinkDashboard({ slug }: { slug: string }) {
 
   const loading = eventsQuery.isPending;
   const events = eventsQuery.data ?? [];
-  const summary = computeSummary(events);
   const lastEvent = [...events].sort(
     (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
   )[0];
-
-  const summaryCards = [
-    { label: "Resume views", value: String(summary.views) },
-    { label: "Unique viewers", value: String(summary.uniqueViewers) },
-    { label: "Downloads", value: String(summary.downloads) },
-    {
-      label: "Download rate",
-      value: summary.downloadRate === null ? "N/A" : `${Math.round(summary.downloadRate * 100)}%`,
-    },
-  ];
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
@@ -71,16 +61,7 @@ export function LinkDashboard({ slug }: { slug: string }) {
         }
       />
 
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-surface-border bg-surface-border lg:grid-cols-4">
-        {summaryCards.map((card) => (
-          <div key={card.label} className="bg-surface px-5 py-6">
-            <dt className="text-xs tracking-wide text-foreground-muted">{card.label}</dt>
-            <dd className="mt-2 font-display text-4xl text-foreground">
-              {loading ? <Skeleton className="h-10 w-16" /> : card.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <SummaryCards events={events} loading={loading} />
 
       {loading ? (
         <Skeleton className="h-96 w-full" />

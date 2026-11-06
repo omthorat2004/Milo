@@ -5,10 +5,7 @@ import { useEffect, useId, useState } from "react";
 
 import { PasswordField } from "@/components/app/auth-form";
 import { Button } from "@/components/ui/button";
-import {
-  useForgotPasswordMutation,
-  useResetPasswordMutation,
-} from "@/hooks/use-auth-mutations";
+import { useForgotPasswordMutation, useResetPasswordMutation } from "@/hooks/use-auth-mutations";
 import { getAuthErrorMessage } from "@/lib/auth.api";
 import { cn } from "@/lib/utils";
 
@@ -113,8 +110,7 @@ export function ForgotPasswordForm({ className }: { className?: string }) {
   return (
     <form onSubmit={handleResetSubmit} className={cn("space-y-4", className)}>
       <p className="text-sm text-foreground-muted">
-        If an account exists for {email}, we sent a reset code. Enter it below with a new
-        password.
+        If an account exists for {email}, we sent a reset code. Enter it below with a new password.
       </p>
 
       <div>

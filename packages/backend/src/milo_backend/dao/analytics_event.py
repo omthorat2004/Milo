@@ -79,18 +79,19 @@ class AnalyticsEventDAO(BaseDAO):
         result = await self.collection.insert_one(document)
         return _as_event({**document, "_id": result.inserted_id})
 
-    async def update_dwell(
+    async def update_page_dwell(
         self,
         *,
         visit_id: str,
         link_id: str,
+        page_number: int,
         dwell_seconds: float,
     ) -> bool:
-        """Attaches dwell data to the view event this visit already created,
-        rather than inserting a second row for the same visit (which would
-        double-count it as two views). Returns False if no matching view
-        exists (the beacon raced the insert, or arrived for a visit that was
-        never recorded), callers treat that as a benign no-op."""
+        """Attaches time-on-page to the event this visit already created for that page:
+        the `view` for page 1, the `page_view` for a later page. No new row is inserted,
+        so a visit's time is never counted as extra views. Returns False if no matching
+        event exists (the beacon raced the insert, or the visit was never recorded),
+        callers treat that as a benign no-op."""
         identifier = _object_id(link_id)
         if identifier is None:
             return False
@@ -99,7 +100,10 @@ class AnalyticsEventDAO(BaseDAO):
             {
                 "visit_id": visit_id,
                 "link_id": identifier,
-                "event_type": EventType.VIEW.value,
+                "event_type": (
+                    EventType.VIEW if page_number == 1 else EventType.PAGE_VIEW
+                ).value,
+                "page_number": page_number,
             },
             {"$set": {"dwell_time_seconds": dwell_seconds}},
         )

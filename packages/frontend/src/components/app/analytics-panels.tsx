@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import {
   browserBreakdown,
   deviceBreakdown,
+  formatDwell,
   osBreakdown,
   pageEngagement,
   trafficSources,
@@ -53,7 +54,7 @@ export function AnalyticsPanels({ events }: { events: AnalyticsEvent[] }) {
                     {page.views} {page.views === 1 ? "view" : "views"} ·{" "}
                     {page.avgDwellSeconds === null
                       ? "no time data"
-                      : `${page.avgDwellSeconds}s avg`}
+                      : `${formatDwell(page.avgDwellSeconds)} avg`}
                   </span>
                 </li>
               ))}

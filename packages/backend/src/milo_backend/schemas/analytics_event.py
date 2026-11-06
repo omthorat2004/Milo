@@ -22,3 +22,6 @@ class AnalyticsEventResponse(BaseModel):
     utm_campaign: str | None
     page_number: int | None
     dwell_time_seconds: float | None
+    # Random per page load, shared by every event of one visit. Lets the dashboard add up the
+    # time a visit spent across pages. It identifies a page load, never a person.
+    visit_id: str | None = None

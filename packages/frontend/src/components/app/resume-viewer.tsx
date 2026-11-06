@@ -54,6 +54,18 @@ function getOrCreateSessionId(): string | null {
   }
 }
 
+/** Adds the time since the clock last started to the page it was running for, then stops it. */
+function bankActiveTime(
+  activeSince: { current: number | null },
+  page: { current: number },
+  pageMs: { current: Map<number, number> },
+): void {
+  if (activeSince.current === null) return;
+  const elapsed = Date.now() - activeSince.current;
+  activeSince.current = null;
+  pageMs.current.set(page.current, (pageMs.current.get(page.current) ?? 0) + elapsed);
+}
+
 type Status = "loading" | "ready" | "error";
 
 type LinkOverlay = {
@@ -86,7 +98,11 @@ type PdfLinkAnnotation = {
  * at, not a hardcoded 1.
  */
 export function ResumeViewer({ slug }: { slug: string }) {
-  const startedAtRef = useRef<number | null>(null);
+  // Time on each page, in ms. Only the page on screen accrues, and only while the tab is
+  // visible. Nothing is sent until the tab closes or the viewer unmounts.
+  const pageMsRef = useRef<Map<number, number>>(new Map());
+  const activeSinceRef = useRef<number | null>(null);
+  const trackedPageRef = useRef(1);
   const sentRef = useRef(false);
   const downloadRef = useRef<HTMLAnchorElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -219,7 +235,9 @@ export function ResumeViewer({ slug }: { slug: string }) {
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
-    startedAtRef.current = Date.now();
+    sentRef.current = false;
+    pageMsRef.current = new Map();
+    activeSinceRef.current = null;
     const sessionId = getOrCreateSessionId();
     const visitId = crypto.randomUUID();
     visitIdRef.current = visitId;
@@ -283,36 +301,60 @@ export function ResumeViewer({ slug }: { slug: string }) {
     }
     void load();
 
+    // Once per visit, when the tab closes (pagehide) or this component unmounts. The
+    // totals are cumulative, so even if both fire the second send is skipped.
     function reportDwell() {
-      if (sentRef.current || startedAtRef.current === null) return;
+      if (sentRef.current) return;
+
+      bankActiveTime(activeSinceRef, trackedPageRef, pageMsRef);
+
+      const pages = Array.from(pageMsRef.current.entries())
+        .map(([pageNumber, ms]) => ({ pageNumber, dwellSeconds: Math.round(ms / 100) / 10 }))
+        // A page flipped past in under a second has no real dwell: leave it out so it
+        // reads "no time data" instead of dragging the average toward 0.
+        .filter((page) => page.dwellSeconds >= 1)
+        .sort((x, y) => x.pageNumber - y.pageNumber);
+      if (pages.length === 0) return;
+
       sentRef.current = true;
-
-      const dwellSeconds = (Date.now() - startedAtRef.current) / 1000;
-      if (dwellSeconds < 1) return;
-
-      sendDwellBeacon(slug, {
-        visitId,
-        pageNumber: currentPageRef.current,
-        dwellSeconds,
-      });
+      sendDwellBeacon(slug, { visitId, pages });
     }
 
-    function handleVisibilityChange() {
-      if (document.visibilityState === "hidden") reportDwell();
-    }
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("pagehide", reportDwell);
 
     return () => {
       cancelled = true;
       controller.abort();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      reportDwell();
       window.removeEventListener("pagehide", reportDwell);
       renderTaskRef.current?.cancel();
       void loadingTaskRef.current?.destroy();
     };
   }, [slug]);
+
+  // Times the page on screen. Re-runs on every page turn, so the cleanup banks the page being
+  // left. Switching to another tab pauses the clock; coming back resumes it. Nothing is sent
+  // from here, see reportDwell above.
+  useEffect(() => {
+    if (status !== "ready") return;
+
+    trackedPageRef.current = currentPage;
+    activeSinceRef.current = document.visibilityState === "visible" ? Date.now() : null;
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") {
+        bankActiveTime(activeSinceRef, trackedPageRef, pageMsRef);
+      } else if (activeSinceRef.current === null) {
+        activeSinceRef.current = Date.now();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      bankActiveTime(activeSinceRef, trackedPageRef, pageMsRef);
+    };
+  }, [status, currentPage]);
 
   // Turning to page 2 or later is its own event, once per page per visit. Page 1 is the
   // view itself, recorded when the document is fetched.

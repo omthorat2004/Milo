@@ -52,7 +52,8 @@ export function TopLinksPanel({
                 />
               </div>
               <span className="ml-auto shrink-0 text-right text-xs text-foreground-muted sm:ml-0 sm:w-24">
-                {link.views} views · {link.downloads} dl
+                {link.views} {link.views === 1 ? "view" : "views"} · {link.downloads}{" "}
+                {link.downloads === 1 ? "download" : "downloads"}
               </span>
               <LinkStatusBadge status={link.status} className="shrink-0" />
             </li>

@@ -179,12 +179,12 @@ Register → email-verify (OTP) → login → refresh → logout → `/me`. Full
 
 `POST /l/{slug}/dwell` (`LinkService.record_dwell`) closes the gap `AnalyticsEvent.dwell_time_seconds`
 left open: `packages/frontend`'s public `/l/[slug]` viewer (`components/app/resume-viewer.tsx`) sends
-one via `navigator.sendBeacon` when the tab hides or unloads. It's deliberately lenient, an unknown
-slug silently no-ops, and an expired/revoked link still records the event, because by the time the
-beacon fires the viewer was already reading the resume; there's no response for the client to act on
-regardless. The frontend has no in-browser PDF renderer, so `page_number` is always `1`, this is
-whole-document dwell time, not true per-PDF-page attention; a real pdf.js integration would be
-required for the latter and doesn't exist.
+one via `navigator.sendBeacon` when the tab closes or the viewer unmounts. The body is a per-page map
+(`pages: [{page_number, dwell_seconds}]`) and each entry is written onto that page's existing event by
+`AnalyticsEventDAO.update_page_dwell` (page 1 on the `view`, later pages on their `page_view`). It's
+deliberately lenient, an unknown slug silently no-ops, a page with no event is skipped, and an
+expired/revoked link still records the time, because by the time the beacon fires the viewer was
+already reading the resume; there's no response for the client to act on regardless.
 
 ## What's not implemented yet
 

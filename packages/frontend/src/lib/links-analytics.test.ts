@@ -12,6 +12,7 @@ import {
   topLinks,
   trafficSources,
   utmCampaigns,
+  visitTimes,
 } from "@/lib/links-analytics";
 import type { AnalyticsEvent, TrackingLink } from "@/lib/links.api";
 
@@ -46,6 +47,7 @@ function event(overrides: Partial<AnalyticsEvent> = {}): AnalyticsEvent {
     utm_campaign: null,
     page_number: 1,
     dwell_time_seconds: null,
+    visit_id: null,
     ...overrides,
   };
 }
@@ -88,6 +90,79 @@ describe("computeSummary", () => {
     const events = [event({ id: "e1", session_id: null }), event({ id: "e2", session_id: null })];
 
     expect(computeSummary(events).uniqueViewers).toBe(0);
+  });
+});
+
+describe("visitTimes / time metrics", () => {
+  const visit = (id: string, pages: [number, number | null][]) =>
+    pages.map(([page, dwell], index) =>
+      event({
+        id: `${id}-${index}`,
+        visit_id: id,
+        event_type: page === 1 ? "view" : "page_view",
+        page_number: page,
+        dwell_time_seconds: dwell,
+      }),
+    );
+
+  it("adds up the pages of one visit and counts the pages that reported time", () => {
+    const events = visit("v1", [
+      [1, 30],
+      [2, 20],
+      [3, null],
+    ]);
+
+    expect(visitTimes(events).get("v1")).toEqual({ seconds: 50, pages: 2 });
+  });
+
+  it("averages each visit's total, not each page", () => {
+    const events = [
+      ...visit("v1", [
+        [1, 30],
+        [2, 30],
+      ]),
+      ...visit("v2", [[1, 20]]),
+    ];
+
+    const summary = computeSummary(events);
+
+    expect(summary.totalTimeSeconds).toBe(80);
+    expect(summary.avgTimeSeconds).toBe(40);
+  });
+
+  it("leaves visits that reported no time out of the average", () => {
+    const events = [...visit("v1", [[1, 60]]), ...visit("v2", [[1, null]])];
+
+    expect(computeSummary(events).avgTimeSeconds).toBe(60);
+  });
+
+  it("reports null average time when nothing reported any", () => {
+    expect(computeSummary(visit("v1", [[1, null]])).avgTimeSeconds).toBeNull();
+    expect(computeSummary([]).totalTimeSeconds).toBe(0);
+  });
+
+  it("ignores download events", () => {
+    const events = [event({ event_type: "download", visit_id: "v1", dwell_time_seconds: 99 })];
+
+    expect(visitTimes(events).size).toBe(0);
+  });
+
+  it("averages time per page across visits, including later pages", () => {
+    const events = [
+      ...visit("v1", [
+        [1, 10],
+        [2, 40],
+      ]),
+      ...visit("v2", [
+        [1, 30],
+        [2, 20],
+      ]),
+    ];
+
+    expect(pageEngagement(events)).toEqual([
+      { page: 1, views: 2, avgDwellSeconds: 20 },
+      { page: 2, views: 2, avgDwellSeconds: 30 },
+    ]);
   });
 });
 

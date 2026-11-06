@@ -181,8 +181,7 @@ async def record_dwell_beacon(
     await service.record_dwell(
         slug=slug,
         visit_id=payload.visit_id,
-        page_number=payload.page_number,
-        dwell_seconds=payload.dwell_seconds,
+        page_dwell={page.page_number: page.dwell_seconds for page in payload.pages},
     )
 
 
@@ -239,6 +238,7 @@ def _public_event(event: AnalyticsEvent) -> AnalyticsEventResponse:
         utm_campaign=event.utm_campaign,
         page_number=event.page_number,
         dwell_time_seconds=event.dwell_time_seconds,
+        visit_id=event.visit_id,
     )
 
 

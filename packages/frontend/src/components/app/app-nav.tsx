@@ -71,7 +71,10 @@ export function AppNav({ resourceId }: Props) {
           </Link>
         ) : null}
 
-        <nav className={cn("flex flex-col gap-1", resourceId ? "mt-4" : "mt-10")} aria-label="Application">
+        <nav
+          className={cn("flex flex-col gap-1", resourceId ? "mt-4" : "mt-10")}
+          aria-label="Application"
+        >
           {items.map((item) => {
             const active = isActive(item.segment);
             return (

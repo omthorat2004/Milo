@@ -15,10 +15,17 @@ class UpdateTrackingLinkRequest(BaseModel):
     expires_in_days: int | None = Field(ge=1, le=3_650)
 
 
-class DwellBeaconRequest(BaseModel):
-    visit_id: str = Field(min_length=1, max_length=128)
-    page_number: int | None = Field(default=None, ge=1)
+class PageDwell(BaseModel):
+    page_number: int = Field(ge=1, le=1000)
     dwell_seconds: float = Field(gt=0, le=24 * 60 * 60)
+
+
+class DwellBeaconRequest(BaseModel):
+    """Time on each page of one visit, sent once when the viewer closes the tab. Totals are
+    cumulative for the whole visit, so a repeat of the same beacon overwrites rather than adds."""
+
+    visit_id: str = Field(min_length=1, max_length=128)
+    pages: list[PageDwell] = Field(min_length=1, max_length=200)
 
 
 class PageViewRequest(BaseModel):

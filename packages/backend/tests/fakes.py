@@ -296,18 +296,21 @@ class FakeAnalyticsEventDAO:
         self._events.append(event)
         return event
 
-    async def update_dwell(
+    async def update_page_dwell(
         self,
         *,
         visit_id: str,
         link_id: str,
+        page_number: int,
         dwell_seconds: float,
     ) -> bool:
+        wanted = EventType.VIEW if page_number == 1 else EventType.PAGE_VIEW
         for index, event in enumerate(self._events):
             if (
                 event.visit_id == visit_id
                 and event.link_id == link_id
-                and event.event_type == EventType.VIEW
+                and event.event_type == wanted
+                and event.page_number == page_number
             ):
                 self._events[index] = event.model_copy(
                     update={"dwell_time_seconds": dwell_seconds}

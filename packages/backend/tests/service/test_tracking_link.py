@@ -347,9 +347,7 @@ async def test_update_expiry_clears_expiry(
 async def test_record_dwell_unknown_slug_noops(
     service: LinkService, events: FakeAnalyticsEventDAO
 ) -> None:
-    await service.record_dwell(
-        slug="missing", visit_id="v1", page_number=1, dwell_seconds=12.0
-    )
+    await service.record_dwell(slug="missing", visit_id="v1", page_dwell={1: 12.0})
 
     assert await events.list_by_links(["anything"]) == []
 
@@ -390,15 +388,35 @@ async def test_record_dwell_updates_the_matching_view_event(
         visit_id="v1",
     )
 
-    await service.record_dwell(
-        slug="dwell1", visit_id="v1", page_number=2, dwell_seconds=45.0
+    await events.create(
+        link_id=link.id,
+        resume_id=resume.id,
+        event_type=EventType.PAGE_VIEW,
+        occurred_at=datetime.now(UTC),
+        session_id="s1",
+        device_category=None,
+        browser=None,
+        os=None,
+        referrer_domain=None,
+        utm_source=None,
+        utm_medium=None,
+        utm_campaign=None,
+        page_number=2,
+        dwell_time_seconds=None,
+        visit_id="v1",
     )
 
-    recorded = await events.list_by_link(link.id)
-    assert len(recorded) == 1
-    # The view stays page 1: later pages are their own `page_view` events.
-    assert recorded[0].page_number == 1
-    assert recorded[0].dwell_time_seconds == 45.0
+    await service.record_dwell(
+        slug="dwell1", visit_id="v1", page_dwell={1: 45.0, 2: 20.5, 3: 7.0}
+    )
+
+    recorded = {e.page_number: e for e in await events.list_by_link(link.id)}
+    # No new rows: page 3 never had an event, so its time is dropped, not invented.
+    assert set(recorded) == {1, 2}
+    assert recorded[1].event_type == EventType.VIEW
+    assert recorded[1].dwell_time_seconds == 45.0
+    assert recorded[2].event_type == EventType.PAGE_VIEW
+    assert recorded[2].dwell_time_seconds == 20.5
 
 
 async def test_record_dwell_unmatched_visit_noops(
@@ -420,7 +438,7 @@ async def test_record_dwell_unmatched_visit_noops(
     assert link is not None
 
     await service.record_dwell(
-        slug="dwell2", visit_id="does-not-exist", page_number=2, dwell_seconds=45.0
+        slug="dwell2", visit_id="does-not-exist", page_dwell={1: 45.0, 2: 9.0}
     )
 
     assert await events.list_by_link(link.id) == []

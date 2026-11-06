@@ -5,7 +5,33 @@ export type Summary = {
   uniqueViewers: number;
   downloads: number;
   downloadRate: number | null;
+  /** Average of each visit's total time across all its pages, over visits that reported any
+   * time. Null when none did, so the UI shows "no data" rather than 0s. */
+  avgTimeSeconds: number | null;
+  /** All time spent reading, summed over every page of every visit. */
+  totalTimeSeconds: number;
 };
+
+/** Seconds each visit spent in total, summed over the pages it reported. A visit is every
+ * event sharing a visit_id; an old event with none counts as a visit of its own. Visits that
+ * reported no time at all are left out. */
+export type VisitTime = { seconds: number; pages: number };
+
+export function visitTimes(events: AnalyticsEvent[]): Map<string, VisitTime> {
+  const totals = new Map<string, VisitTime>();
+
+  for (const event of events) {
+    if (event.event_type === "download" || event.dwell_time_seconds === null) continue;
+    const key = event.visit_id ?? `event:${event.id}`;
+    const entry = totals.get(key) ?? { seconds: 0, pages: 0 };
+    totals.set(key, {
+      seconds: entry.seconds + event.dwell_time_seconds,
+      pages: entry.pages + 1,
+    });
+  }
+
+  return totals;
+}
 
 export function computeSummary(events: AnalyticsEvent[]): Summary {
   const views = events.filter((event) => event.event_type === "view");
@@ -17,6 +43,9 @@ export function computeSummary(events: AnalyticsEvent[]): Summary {
     downloads.map((event) => event.session_id).filter((id): id is string => id !== null),
   ).size;
 
+  const visitTotals = Array.from(visitTimes(events).values(), (visit) => visit.seconds);
+  const totalTimeSeconds = visitTotals.reduce((sum, seconds) => sum + seconds, 0);
+
   return {
     views: views.length,
     uniqueViewers,
@@ -24,6 +53,9 @@ export function computeSummary(events: AnalyticsEvent[]): Summary {
     // Share of viewers who downloaded, not downloads per viewer: one person
     // downloading twice must not push this past 100%.
     downloadRate: uniqueViewers > 0 ? Math.min(1, uniqueDownloaders / uniqueViewers) : null,
+    avgTimeSeconds:
+      visitTotals.length > 0 ? Math.round(totalTimeSeconds / visitTotals.length) : null,
+    totalTimeSeconds: Math.round(totalTimeSeconds),
   };
 }
 
