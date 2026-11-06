@@ -52,10 +52,14 @@ def ensure_is_pdf_document(content_type: str, content: bytes) -> None:
         and media_type not in _GENERIC_BINARY_CONTENT_TYPES
     ):
         raise ValueError(
-            f"That URL serves {media_type or 'an unknown type'}, not a PDF."
+            f"That URL serves {media_type or 'an unknown type'}, not a PDF. "
+            "Your link may not be public: make sure anyone with the link can view it."
         )
     if not content.startswith(_PDF_MAGIC_BYTES):
-        raise ValueError("That URL doesn't serve a PDF Milo can read.")
+        raise ValueError(
+            "That URL doesn't serve a PDF Milo can read. "
+            "Your link may not be public: make sure anyone with the link can view it."
+        )
 
 
 async def fetch_document(
