@@ -1,8 +1,14 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, GripVertical, ZoomIn, ZoomOut } from "lucide-react";
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import { detectBrowser, detectDeviceCategory, detectOS } from "@/lib/device-info";
 import { sendDwellBeacon, sendPageView } from "@/lib/links.api";
@@ -100,6 +106,46 @@ export function ResumeViewer({ slug }: { slug: string }) {
   const [scale, setScale] = useState(1);
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [linkOverlays, setLinkOverlays] = useState<LinkOverlay[]>([]);
+  // null = default spot (bottom centre); set once the viewer drags the pill.
+  const [navPos, setNavPos] = useState<{ x: number; y: number } | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+
+  const goToPage = useCallback(
+    (delta: number) => setCurrentPage((page) => Math.min(numPages, Math.max(1, page + delta))),
+    [numPages],
+  );
+
+  function startDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const nav = navRef.current;
+    if (!nav) return;
+    const rect = nav.getBoundingClientRect();
+    dragRef.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    const nav = navRef.current;
+    if (!drag || !nav) return;
+    const x = Math.min(window.innerWidth - nav.offsetWidth, Math.max(0, event.clientX - drag.dx));
+    const y = Math.min(window.innerHeight - nav.offsetHeight, Math.max(0, event.clientY - drag.dy));
+    setNavPos({ x, y });
+  }
+
+  function endDrag() {
+    dragRef.current = null;
+  }
+
+  useEffect(() => {
+    if (status !== "ready") return;
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "ArrowRight") goToPage(1);
+      else if (event.key === "ArrowLeft") goToPage(-1);
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [status, goToPage]);
 
   useEffect(() => {
     currentPageRef.current = currentPage;
@@ -312,30 +358,6 @@ export function ResumeViewer({ slug }: { slug: string }) {
             <div className="flex items-center gap-1 text-xs text-foreground-muted">
               <button
                 type="button"
-                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                disabled={currentPage <= 1}
-                aria-label="Previous page"
-                className="rounded-full p-1.5 transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-30"
-              >
-                <ChevronLeft className="size-4" aria-hidden="true" />
-              </button>
-              <span className="tabular-nums">
-                {currentPage} / {numPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setCurrentPage((page) => Math.min(numPages, page + 1))}
-                disabled={currentPage >= numPages}
-                aria-label="Next page"
-                className="rounded-full p-1.5 transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-30"
-              >
-                <ChevronRight className="size-4" aria-hidden="true" />
-              </button>
-
-              <span className="mx-1 h-4 w-px bg-surface-border" aria-hidden="true" />
-
-              <button
-                type="button"
                 onClick={() => setScale((value) => Math.max(MIN_SCALE, value - SCALE_STEP))}
                 disabled={scale <= MIN_SCALE}
                 aria-label="Zoom out"
@@ -404,6 +426,51 @@ export function ResumeViewer({ slug }: { slug: string }) {
           ))}
         </div>
       </div>
+      {status === "ready" && numPages > 1 ? (
+        <div
+          ref={navRef}
+          role="navigation"
+          aria-label="Page navigation"
+          className={cn(
+            "fixed z-20 flex items-center gap-1 rounded-full border border-surface-border bg-surface/90 px-1.5 py-1.5 text-sm text-foreground-muted shadow-lg backdrop-blur",
+            navPos ? "" : "bottom-6 left-1/2 -translate-x-1/2",
+          )}
+          style={navPos ? { left: navPos.x, top: navPos.y } : undefined}
+        >
+          <button
+            type="button"
+            aria-label="Drag to move page navigation"
+            onPointerDown={startDrag}
+            onPointerMove={moveDrag}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            className="cursor-grab touch-none rounded-full p-1.5 hover:text-foreground active:cursor-grabbing"
+          >
+            <GripVertical className="size-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => goToPage(-1)}
+            disabled={currentPage <= 1}
+            aria-label="Previous page"
+            className="rounded-full p-1.5 transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-30"
+          >
+            <ChevronLeft className="size-4" aria-hidden="true" />
+          </button>
+          <span className="min-w-16 text-center tabular-nums" aria-live="polite">
+            <span className="text-foreground">{currentPage}</span> of {numPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => goToPage(1)}
+            disabled={currentPage >= numPages}
+            aria-label="Next page"
+            className="rounded-full p-1.5 transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-30"
+          >
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
