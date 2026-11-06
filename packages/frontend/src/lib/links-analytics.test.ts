@@ -9,6 +9,9 @@ import {
   formatRelativeTime,
   osBreakdown,
   pageEngagement,
+  pageNumbers,
+  readingTime,
+  visitRows,
   topLinks,
   trafficSources,
   utmCampaigns,
@@ -124,27 +127,81 @@ describe("visitTimes / time metrics", () => {
       ...visit("v2", [[1, 20]]),
     ];
 
-    const summary = computeSummary(events);
+    const time = readingTime(events);
 
-    expect(summary.totalTimeSeconds).toBe(80);
-    expect(summary.avgTimeSeconds).toBe(40);
+    expect(time.totalSeconds).toBe(80);
+    expect(time.avgSeconds).toBe(40);
+    expect(time.visits).toBe(2);
   });
 
   it("leaves visits that reported no time out of the average", () => {
     const events = [...visit("v1", [[1, 60]]), ...visit("v2", [[1, null]])];
 
-    expect(computeSummary(events).avgTimeSeconds).toBe(60);
+    expect(readingTime(events).avgSeconds).toBe(60);
   });
 
   it("reports null average time when nothing reported any", () => {
-    expect(computeSummary(visit("v1", [[1, null]])).avgTimeSeconds).toBeNull();
-    expect(computeSummary([]).totalTimeSeconds).toBe(0);
+    expect(readingTime(visit("v1", [[1, null]])).avgSeconds).toBeNull();
+    expect(readingTime([]).totalSeconds).toBe(0);
   });
 
   it("ignores download events", () => {
     const events = [event({ event_type: "download", visit_id: "v1", dwell_time_seconds: 99 })];
 
     expect(visitTimes(events).size).toBe(0);
+  });
+
+  it("scopes total and average to one page when a page is chosen", () => {
+    const events = [
+      ...visit("v1", [
+        [1, 10],
+        [2, 40],
+      ]),
+      ...visit("v2", [
+        [1, 30],
+        [2, 20],
+      ]),
+      ...visit("v3", [[1, 5]]),
+    ];
+
+    expect(readingTime(events, 2)).toEqual({ visits: 2, avgSeconds: 30, totalSeconds: 60 });
+    expect(readingTime(events, 1)).toEqual({ visits: 3, avgSeconds: 15, totalSeconds: 45 });
+    expect(pageNumbers(events)).toEqual([1, 2]);
+  });
+
+  it("lists one row per visit, newest first, with per-page time", () => {
+    const older = visit("v1", [
+      [1, 10],
+      [2, 40],
+    ]).map((e) => ({ ...e, occurred_at: "2026-11-01T10:00:00Z" }));
+    const newer = visit("v2", [[1, 30]]).map((e) => ({
+      ...e,
+      occurred_at: "2026-11-02T10:00:00Z",
+    }));
+
+    const rows = visitRows([...older, ...newer]);
+
+    expect(rows.map((row) => row.key)).toEqual(["v2", "v1"]);
+    expect(rows[1]).toMatchObject({ seconds: 50, pagesRead: 2 });
+    expect(rows[1]?.perPage).toEqual([
+      { page: 1, seconds: 10 },
+      { page: 2, seconds: 40 },
+    ]);
+  });
+
+  it("limits the visit list to visits that opened the chosen page", () => {
+    const events = [
+      ...visit("v1", [
+        [1, 10],
+        [2, 40],
+      ]),
+      ...visit("v2", [[1, 30]]),
+    ];
+
+    const rows = visitRows(events, 2);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ key: "v1", seconds: 40 });
   });
 
   it("averages time per page across visits, including later pages", () => {

@@ -5,23 +5,22 @@ export type Summary = {
   uniqueViewers: number;
   downloads: number;
   downloadRate: number | null;
-  /** Average of each visit's total time across all its pages, over visits that reported any
-   * time. Null when none did, so the UI shows "no data" rather than 0s. */
-  avgTimeSeconds: number | null;
-  /** All time spent reading, summed over every page of every visit. */
-  totalTimeSeconds: number;
 };
 
-/** Seconds each visit spent in total, summed over the pages it reported. A visit is every
- * event sharing a visit_id; an old event with none counts as a visit of its own. Visits that
- * reported no time at all are left out. */
 export type VisitTime = { seconds: number; pages: number };
 
-export function visitTimes(events: AnalyticsEvent[]): Map<string, VisitTime> {
+/** Seconds each visit spent, summed over the pages it reported time for. A visit is every
+ * event sharing a visit_id; an old event with none counts as a visit of its own. With `page`,
+ * only that page's time counts. Visits that reported no time are left out. */
+export function visitTimes(
+  events: AnalyticsEvent[],
+  page: number | null = null,
+): Map<string, VisitTime> {
   const totals = new Map<string, VisitTime>();
 
   for (const event of events) {
     if (event.event_type === "download" || event.dwell_time_seconds === null) continue;
+    if (page !== null && event.page_number !== page) continue;
     const key = event.visit_id ?? `event:${event.id}`;
     const entry = totals.get(key) ?? { seconds: 0, pages: 0 };
     totals.set(key, {
@@ -31,6 +30,97 @@ export function visitTimes(events: AnalyticsEvent[]): Map<string, VisitTime> {
   }
 
   return totals;
+}
+
+export type ReadingTime = {
+  /** Visits that reported time (on the chosen page, if one is chosen). */
+  visits: number;
+  /** Mean time per such visit. Null when none reported any, so the UI shows "N/A", not 0s. */
+  avgSeconds: number | null;
+  totalSeconds: number;
+};
+
+/** Total and average reading time over the whole resume (`page` null) or one page of it. */
+export function readingTime(events: AnalyticsEvent[], page: number | null = null): ReadingTime {
+  const seconds = Array.from(visitTimes(events, page).values(), (visit) => visit.seconds);
+  const total = seconds.reduce((sum, value) => sum + value, 0);
+
+  return {
+    visits: seconds.length,
+    avgSeconds: seconds.length > 0 ? Math.round(total / seconds.length) : null,
+    totalSeconds: Math.round(total),
+  };
+}
+
+/** Every page number that has an event, ascending, for the page picker. */
+export function pageNumbers(events: AnalyticsEvent[]): number[] {
+  const pages = new Set<number>();
+  for (const event of events) {
+    if (event.event_type !== "download" && event.page_number !== null) pages.add(event.page_number);
+  }
+  return Array.from(pages).sort((a, b) => a - b);
+}
+
+export type VisitRow = {
+  key: string;
+  startedAt: string;
+  deviceCategory: string | null;
+  browser: string | null;
+  os: string | null;
+  referrerDomain: string | null;
+  /** Time on the chosen page, or on the whole resume when none is chosen. Null = no time data. */
+  seconds: number | null;
+  /** How many different pages this visit opened. */
+  pagesRead: number;
+  perPage: { page: number; seconds: number | null }[];
+};
+
+/** One row per visit, newest first. With `page`, only visits that opened that page. Visits
+ * carry only the allowed anonymous signals (device, browser, OS, referrer), never an identity. */
+export function visitRows(events: AnalyticsEvent[], page: number | null = null): VisitRow[] {
+  const groups = new Map<string, AnalyticsEvent[]>();
+
+  for (const event of events) {
+    if (event.event_type === "download" || event.page_number === null) continue;
+    const key = event.visit_id ?? `event:${event.id}`;
+    groups.set(key, [...(groups.get(key) ?? []), event]);
+  }
+
+  const rows: VisitRow[] = [];
+  for (const [key, group] of groups) {
+    const ordered = [...group].sort(
+      (a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime(),
+    );
+    const perPage = ordered
+      .map((event) => ({ page: event.page_number ?? 1, seconds: event.dwell_time_seconds }))
+      .sort((a, b) => a.page - b.page);
+
+    let seconds: number | null;
+    if (page === null) {
+      const timed = perPage.filter((entry) => entry.seconds !== null);
+      seconds =
+        timed.length > 0 ? timed.reduce((sum, entry) => sum + (entry.seconds ?? 0), 0) : null;
+    } else {
+      const onPage = perPage.find((entry) => entry.page === page);
+      if (!onPage) continue;
+      seconds = onPage.seconds;
+    }
+
+    const first = ordered[0]!;
+    rows.push({
+      key,
+      startedAt: first.occurred_at,
+      deviceCategory: first.device_category,
+      browser: first.browser,
+      os: first.os,
+      referrerDomain: first.referrer_domain,
+      seconds,
+      pagesRead: new Set(perPage.map((entry) => entry.page)).size,
+      perPage,
+    });
+  }
+
+  return rows.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
 }
 
 export function computeSummary(events: AnalyticsEvent[]): Summary {
@@ -43,9 +133,6 @@ export function computeSummary(events: AnalyticsEvent[]): Summary {
     downloads.map((event) => event.session_id).filter((id): id is string => id !== null),
   ).size;
 
-  const visitTotals = Array.from(visitTimes(events).values(), (visit) => visit.seconds);
-  const totalTimeSeconds = visitTotals.reduce((sum, seconds) => sum + seconds, 0);
-
   return {
     views: views.length,
     uniqueViewers,
@@ -53,9 +140,6 @@ export function computeSummary(events: AnalyticsEvent[]): Summary {
     // Share of viewers who downloaded, not downloads per viewer: one person
     // downloading twice must not push this past 100%.
     downloadRate: uniqueViewers > 0 ? Math.min(1, uniqueDownloaders / uniqueViewers) : null,
-    avgTimeSeconds:
-      visitTotals.length > 0 ? Math.round(totalTimeSeconds / visitTotals.length) : null,
-    totalTimeSeconds: Math.round(totalTimeSeconds),
   };
 }
 

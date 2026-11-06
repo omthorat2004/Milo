@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { LinkStatusBadge } from "@/components/app/link-status-badge";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
+import { ReadingTime } from "@/components/app/reading-time";
 import { SummaryCards } from "@/components/app/summary-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLinkBySlugQuery, useLinkEventsQuery } from "@/hooks/use-link-queries";
@@ -68,6 +69,8 @@ export function LinkDashboard({ slug }: { slug: string }) {
       ) : (
         <>
           <ActivityTrend events={events} />
+
+          <ReadingTime events={events} />
 
           <AnalyticsPanels events={events} />
 

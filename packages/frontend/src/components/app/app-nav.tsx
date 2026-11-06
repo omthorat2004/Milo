@@ -1,8 +1,18 @@
 "use client";
 
-import { ArrowLeft, FileText, LayoutDashboard, LogOut, ScrollText, User } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ScrollText,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { MiloMark } from "@/components/app/milo-mark";
 import { useLogoutMutation } from "@/hooks/use-auth-mutations";
@@ -10,6 +20,41 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@milo/ui/theme";
 
 const PROFILE_HREF = "/account";
+const COLLAPSED_STORAGE_KEY = "milo_sidebar_collapsed";
+
+// The collapsed choice lives in localStorage so it survives reloads. Wrapped as an external
+// store so the first client render matches the server (open) and then switches, with no
+// setState-in-effect. `memory` keeps the toggle working when storage is blocked.
+let collapsedInMemory = false;
+const collapsedListeners = new Set<() => void>();
+
+function subscribeCollapsed(listener: () => void) {
+  collapsedListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    collapsedListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+function readCollapsed(): boolean {
+  try {
+    const stored = localStorage.getItem(COLLAPSED_STORAGE_KEY);
+    return stored === null ? collapsedInMemory : stored === "1";
+  } catch {
+    return collapsedInMemory;
+  }
+}
+
+function writeCollapsed(next: boolean) {
+  collapsedInMemory = next;
+  try {
+    localStorage.setItem(COLLAPSED_STORAGE_KEY, next ? "1" : "0");
+  } catch {
+    // Not remembered across reloads, still toggles for this visit.
+  }
+  collapsedListeners.forEach((listener) => listener());
+}
 
 // The same three pages exist at two levels, so the labels say which one you are on:
 // across the whole account (no resource id) or for one link.
@@ -37,6 +82,20 @@ export function AppNav({ resourceId }: Props) {
   const pathname = usePathname();
   const logout = useLogoutMutation();
   const items = resourceId ? linkItems : accountItems;
+  const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
+
+  // The page offset lives in the (app) layout, which can't see this state, so it is shared as
+  // a flag on <html> that the layout's padding reacts to.
+  useEffect(() => {
+    document.documentElement.dataset.sidebar = collapsed ? "collapsed" : "open";
+    return () => {
+      delete document.documentElement.dataset.sidebar;
+    };
+  }, [collapsed]);
+
+  function toggleSidebar() {
+    writeCollapsed(!collapsed);
+  }
 
   const isActive = (segment: string) => {
     const href = hrefFor(segment, resourceId);
@@ -47,7 +106,12 @@ export function AppNav({ resourceId }: Props) {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-surface-border bg-background/60 px-4 py-6 lg:flex">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-surface-border bg-background/60 px-4 py-6",
+          collapsed ? "" : "lg:flex",
+        )}
+      >
         <div className="flex items-center justify-between px-2">
           <Link
             href="/dashboard"
@@ -58,7 +122,17 @@ export function AppNav({ resourceId }: Props) {
             <span className="font-display text-2xl tracking-tight text-foreground">Milo</span>
           </Link>
 
-          <ThemeToggle className="flex size-8 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground" />
+          <div className="flex items-center gap-1">
+            <ThemeToggle className="flex size-8 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground" />
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Close sidebar"
+              className="flex size-8 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+            >
+              <PanelLeftClose className="size-4" aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         {resourceId ? (
@@ -127,6 +201,17 @@ export function AppNav({ resourceId }: Props) {
           </button>
         </div>
       </aside>
+
+      {collapsed ? (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label="Open sidebar"
+          className="fixed top-4 left-4 z-40 hidden size-9 items-center justify-center rounded-full border border-surface-border bg-background/80 text-foreground-muted backdrop-blur-md transition-colors hover:text-foreground lg:flex"
+        >
+          <PanelLeftOpen className="size-4" aria-hidden="true" />
+        </button>
+      ) : null}
 
       {resourceId ? (
         <Link
