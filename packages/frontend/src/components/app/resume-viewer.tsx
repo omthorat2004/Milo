@@ -197,9 +197,12 @@ export function ResumeViewer({ slug }: { slug: string }) {
     // actually cancels the in-flight request before that happens.
     async function load() {
       try {
-        const pdfjsLib = await import("pdfjs-dist");
+        // The legacy build, not the default one: the default targets the newest
+        // browsers and fails to load on older Safari, which shows the error
+        // state below before the view request is even sent.
+        const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
         pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-          "pdfjs-dist/build/pdf.worker.min.mjs",
+          "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
           import.meta.url,
         ).toString();
 
@@ -218,6 +221,7 @@ export function ResumeViewer({ slug }: { slug: string }) {
         setStatus("ready");
       } catch (err) {
         if (!cancelled && !(err instanceof DOMException && err.name === "AbortError")) {
+          console.error("Milo viewer failed to load the resume", err);
           setStatus("error");
         }
       }
