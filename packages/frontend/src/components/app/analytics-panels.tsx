@@ -7,12 +7,14 @@ import {
   osBreakdown,
   pageEngagement,
   trafficSources,
+  utmCampaigns,
   type NamedCount,
 } from "@/lib/links-analytics";
 import type { AnalyticsEvent } from "@/lib/links.api";
 
 export function AnalyticsPanels({ events }: { events: AnalyticsEvent[] }) {
   const sources = trafficSources(events);
+  const campaigns = utmCampaigns(events);
   const pages = pageEngagement(events);
   const devices = deviceBreakdown(events);
   const browsers = browserBreakdown(events);
@@ -48,11 +50,28 @@ export function AnalyticsPanels({ events }: { events: AnalyticsEvent[] }) {
                 <li key={page.page} className="flex items-center justify-between text-sm">
                   <span className="text-foreground">Page {page.page}</span>
                   <span className="text-foreground-muted">
-                    {page.views} views · {page.avgDwellSeconds}s avg
+                    {page.views} {page.views === 1 ? "view" : "views"} ·{" "}
+                    {page.avgDwellSeconds === null
+                      ? "no time data"
+                      : `${page.avgDwellSeconds}s avg`}
                   </span>
                 </li>
               ))}
             </ul>
+          )}
+        </Panel>
+      </section>
+
+      <section>
+        <Panel title="Campaigns">
+          {campaigns.length === 0 ? (
+            <EmptyState
+              title="No campaigns tagged yet"
+              description="Add ?utm_campaign=name (or utm_source) to the link you share and unique viewers are grouped by it here."
+              className="border-0 bg-transparent px-0 py-8"
+            />
+          ) : (
+            <BarList items={campaigns} />
           )}
         </Panel>
       </section>

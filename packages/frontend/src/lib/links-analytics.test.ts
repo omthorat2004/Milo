@@ -11,6 +11,7 @@ import {
   pageEngagement,
   topLinks,
   trafficSources,
+  utmCampaigns,
 } from "@/lib/links-analytics";
 import type { AnalyticsEvent, TrackingLink } from "@/lib/links.api";
 
@@ -66,6 +67,19 @@ describe("computeSummary", () => {
     expect(summary.downloadRate).toBeCloseTo(0.5);
   });
 
+  it("measures download rate as the share of viewers who downloaded, never above 100%", () => {
+    const events = [
+      event({ id: "e1", session_id: "s1" }),
+      event({ id: "e2", session_id: "s1", event_type: "download" }),
+      event({ id: "e3", session_id: "s1", event_type: "download" }),
+    ];
+
+    const summary = computeSummary(events);
+
+    expect(summary.downloads).toBe(2);
+    expect(summary.downloadRate).toBe(1);
+  });
+
   it("reports null download rate with no viewers", () => {
     expect(computeSummary([]).downloadRate).toBeNull();
   });
@@ -80,9 +94,9 @@ describe("computeSummary", () => {
 describe("trafficSources", () => {
   it("groups by referrer domain, treating null as Direct, sorted descending", () => {
     const events = [
-      event({ referrer_domain: "linkedin.com" }),
-      event({ referrer_domain: "linkedin.com" }),
-      event({ referrer_domain: null }),
+      event({ session_id: "s1", referrer_domain: "linkedin.com" }),
+      event({ session_id: "s2", referrer_domain: "linkedin.com" }),
+      event({ session_id: "s3", referrer_domain: null }),
     ];
 
     expect(trafficSources(events)).toEqual([
@@ -92,12 +106,58 @@ describe("trafficSources", () => {
   });
 
   it("respects the limit", () => {
-    const events = ["a.com", "b.com", "c.com"].map((domain) => event({ referrer_domain: domain }));
+    const events = ["a.com", "b.com", "c.com"].map((domain, index) =>
+      event({ session_id: `s${index}`, referrer_domain: domain }),
+    );
     expect(trafficSources(events, 2)).toHaveLength(2);
+  });
+
+  it("counts one visit once even if it also downloaded or viewed again", () => {
+    const events = [
+      event({ id: "e1", session_id: "s1" }),
+      event({ id: "e2", session_id: "s1", event_type: "download" }),
+      event({ id: "e3", session_id: "s1" }),
+    ];
+
+    expect(trafficSources(events)).toEqual([{ domain: "linkedin.com", count: 1 }]);
+  });
+
+  it("counts a view with no session id on its own", () => {
+    const events = [event({ session_id: null }), event({ session_id: null })];
+
+    expect(trafficSources(events)).toEqual([{ domain: "linkedin.com", count: 2 }]);
+  });
+});
+
+describe("utmCampaigns", () => {
+  it("counts unique viewers per campaign, falling back to utm_source", () => {
+    const events = [
+      event({ session_id: "s1", utm_campaign: "spring", utm_source: "linkedin" }),
+      event({ session_id: "s2", utm_campaign: "spring" }),
+      event({ session_id: "s3", utm_campaign: null, utm_source: "newsletter" }),
+      event({ session_id: "s3", event_type: "download", utm_campaign: "spring" }),
+    ];
+
+    expect(utmCampaigns(events)).toEqual([
+      { name: "spring", count: 2 },
+      { name: "newsletter", count: 1 },
+    ]);
+  });
+
+  it("leaves out views with no UTM params", () => {
+    const events = [event({ session_id: "s1", utm_campaign: null, utm_source: null })];
+
+    expect(utmCampaigns(events)).toEqual([]);
   });
 });
 
 describe("pageEngagement", () => {
+  it("reports null average dwell when no view recorded one", () => {
+    const events = [event({ page_number: 1, dwell_time_seconds: null })];
+
+    expect(pageEngagement(events)).toEqual([{ page: 1, views: 1, avgDwellSeconds: null }]);
+  });
+
   it("averages dwell time per page, counting only view events", () => {
     const events = [
       event({ page_number: 1, dwell_time_seconds: 10 }),
@@ -149,19 +209,34 @@ describe("formatRelativeTime", () => {
 describe("deviceBreakdown / browserBreakdown / osBreakdown", () => {
   it("groups by the field, sorted by count descending", () => {
     const events = [
-      event({ device_category: "desktop" }),
-      event({ device_category: "desktop" }),
-      event({ device_category: "mobile" }),
+      event({ session_id: "s1", device_category: "desktop" }),
+      event({ session_id: "s2", device_category: "desktop" }),
+      event({ session_id: "s3", device_category: "mobile" }),
     ];
 
     expect(deviceBreakdown(events)).toEqual([
-      { name: "desktop", count: 2 },
-      { name: "mobile", count: 1 },
+      { name: "Desktop", count: 2 },
+      { name: "Mobile", count: 1 },
     ]);
   });
 
+  it("ignores download events and repeat views from the same session", () => {
+    const events = [
+      event({ id: "e1", session_id: "s1" }),
+      event({ id: "e2", session_id: "s1", event_type: "download" }),
+      event({ id: "e3", session_id: "s1" }),
+    ];
+
+    expect(deviceBreakdown(events)).toEqual([{ name: "Desktop", count: 1 }]);
+    expect(browserBreakdown(events)).toEqual([{ name: "Chrome", count: 1 }]);
+    expect(osBreakdown(events)).toEqual([{ name: "macOS", count: 1 }]);
+  });
+
   it("buckets a null field as Unknown rather than dropping the event", () => {
-    const events = [event({ browser: null }), event({ browser: "Chrome" })];
+    const events = [
+      event({ session_id: "s1", browser: null }),
+      event({ session_id: "s2", browser: "Chrome" }),
+    ];
 
     expect(browserBreakdown(events)).toEqual(
       expect.arrayContaining([
@@ -172,7 +247,11 @@ describe("deviceBreakdown / browserBreakdown / osBreakdown", () => {
   });
 
   it("reads the os field independently of device/browser", () => {
-    const events = [event({ os: "macOS" }), event({ os: "macOS" }), event({ os: "Windows" })];
+    const events = [
+      event({ session_id: "s1", os: "macOS" }),
+      event({ session_id: "s2", os: "macOS" }),
+      event({ session_id: "s3", os: "Windows" }),
+    ];
 
     expect(osBreakdown(events)).toEqual([
       { name: "macOS", count: 2 },
@@ -238,7 +317,14 @@ describe("topLinks", () => {
     const result = topLinks(links, [], statusOf);
 
     expect(result).toEqual([
-      { linkId: "a", title: "My resume", status: "active", views: 0, downloads: 0 },
+      {
+        linkId: "a",
+        slug: "abc123",
+        title: "My resume",
+        status: "active",
+        views: 0,
+        downloads: 0,
+      },
     ]);
   });
 

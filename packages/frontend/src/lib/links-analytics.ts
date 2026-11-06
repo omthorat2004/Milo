@@ -13,13 +13,34 @@ export function computeSummary(events: AnalyticsEvent[]): Summary {
   const uniqueViewers = new Set(
     views.map((event) => event.session_id).filter((id): id is string => id !== null),
   ).size;
+  const uniqueDownloaders = new Set(
+    downloads.map((event) => event.session_id).filter((id): id is string => id !== null),
+  ).size;
 
   return {
     views: views.length,
     uniqueViewers,
     downloads: downloads.length,
-    downloadRate: uniqueViewers > 0 ? downloads.length / uniqueViewers : null,
+    // Share of viewers who downloaded, not downloads per viewer: one person
+    // downloading twice must not push this past 100%.
+    downloadRate: uniqueViewers > 0 ? Math.min(1, uniqueDownloaders / uniqueViewers) : null,
   };
+}
+
+/** View events only, one per session (the first seen). The source/device/browser/OS panels
+ * use this so one visit that also downloaded the PDF counts once, matching "Unique viewers"
+ * instead of counting the download event as a second visitor. An event with no session id
+ * can't be matched to any other, so it counts on its own. */
+function uniqueViews(events: AnalyticsEvent[]): AnalyticsEvent[] {
+  const seen = new Set<string>();
+
+  return events.filter((event) => {
+    if (event.event_type !== "view") return false;
+    if (event.session_id === null) return true;
+    if (seen.has(event.session_id)) return false;
+    seen.add(event.session_id);
+    return true;
+  });
 }
 
 export type TrafficSource = { domain: string; count: number };
@@ -27,7 +48,7 @@ export type TrafficSource = { domain: string; count: number };
 export function trafficSources(events: AnalyticsEvent[], limit = 5): TrafficSource[] {
   const counts = new Map<string, number>();
 
-  for (const event of events) {
+  for (const event of uniqueViews(events)) {
     const domain = event.referrer_domain ?? "Direct";
     counts.set(domain, (counts.get(domain) ?? 0) + 1);
   }
@@ -38,7 +59,29 @@ export function trafficSources(events: AnalyticsEvent[], limit = 5): TrafficSour
     .slice(0, limit);
 }
 
-export type PageEngagement = { page: number; views: number; avgDwellSeconds: number };
+/** `avgDwellSeconds` is null when no view of the page reported a dwell time, so the UI can
+ * show "no data" instead of a misleading "0s". */
+export type CampaignCount = { name: string; count: number };
+
+/** Unique viewers per UTM campaign (falling back to utm_source when no campaign is set), most
+ * first. Views with no UTM params at all are left out: "untagged" isn't a campaign, and it is
+ * already covered by Traffic sources. UTM params are an allowed signal (root CLAUDE.md). */
+export function utmCampaigns(events: AnalyticsEvent[], limit = 5): CampaignCount[] {
+  const counts = new Map<string, number>();
+
+  for (const event of uniqueViews(events)) {
+    const name = event.utm_campaign ?? event.utm_source;
+    if (!name) continue;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+export type PageEngagement = { page: number; views: number; avgDwellSeconds: number | null };
 
 export function pageEngagement(events: AnalyticsEvent[]): PageEngagement[] {
   const byPage = new Map<number, { views: number; dwellTotal: number; dwellCount: number }>();
@@ -58,7 +101,8 @@ export function pageEngagement(events: AnalyticsEvent[]): PageEngagement[] {
     .map(([page, entry]) => ({
       page,
       views: entry.views,
-      avgDwellSeconds: entry.dwellCount > 0 ? Math.round(entry.dwellTotal / entry.dwellCount) : 0,
+      avgDwellSeconds:
+        entry.dwellCount > 0 ? Math.round(entry.dwellTotal / entry.dwellCount) : null,
     }))
     .sort((a, b) => a.page - b.page);
 }
@@ -71,7 +115,7 @@ function groupCount(
 ): NamedCount[] {
   const counts = new Map<string, number>();
 
-  for (const event of events) {
+  for (const event of uniqueViews(events)) {
     const name = key(event);
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
