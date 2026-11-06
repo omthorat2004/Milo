@@ -6,7 +6,6 @@ import { ActivityTrend } from "@/components/app/activity-trend";
 import { AnalyticsPanels } from "@/components/app/analytics-panels";
 import { EmptyState } from "@/components/app/empty-state";
 import { TopLinksPanel } from "@/components/app/top-links";
-import { ReadingTime } from "@/components/app/reading-time";
 import { SummaryCards } from "@/components/app/summary-cards";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyEventsQuery, useMyLinksQuery } from "@/hooks/use-link-queries";
@@ -43,8 +42,6 @@ export function AccountDashboard() {
       ) : (
         <>
           <ActivityTrend events={events} />
-
-          <ReadingTime events={events} />
 
           <TopLinksPanel links={links} events={events} />
 
