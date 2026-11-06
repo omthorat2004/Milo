@@ -13,5 +13,11 @@ export function AccountLogs() {
     return links.find((link) => link.id === linkId)?.resume_title ?? "Deleted link";
   }
 
-  return <ActivityLog events={eventsQuery.data ?? []} linkTitleFor={linkTitleFor} />;
+  return (
+    <ActivityLog
+      events={eventsQuery.data ?? []}
+      linkTitleFor={linkTitleFor}
+      loading={eventsQuery.isPending || linksQuery.isPending}
+    />
+  );
 }

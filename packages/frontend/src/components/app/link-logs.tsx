@@ -40,7 +40,7 @@ export function LinkLogs({ slug }: { slug: string }) {
         description="The raw events behind this link's dashboard, newest first."
       />
 
-      <ActivityLog events={eventsQuery.data ?? []} />
+      <ActivityLog events={eventsQuery.data ?? []} loading={eventsQuery.isPending} />
     </div>
   );
 }

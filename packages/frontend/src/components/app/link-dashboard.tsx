@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { LinkStatusBadge } from "@/components/app/link-status-badge";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLinkBySlugQuery, useLinkEventsQuery } from "@/hooks/use-link-queries";
 import { computeSummary, formatRelativeTime } from "@/lib/links-analytics";
 import { linkStatus } from "@/lib/links.api";
@@ -39,6 +40,7 @@ export function LinkDashboard({ slug }: { slug: string }) {
     );
   }
 
+  const loading = eventsQuery.isPending;
   const events = eventsQuery.data ?? [];
   const summary = computeSummary(events);
   const lastEvent = [...events].sort(
@@ -73,35 +75,43 @@ export function LinkDashboard({ slug }: { slug: string }) {
         {summaryCards.map((card) => (
           <div key={card.label} className="bg-surface px-5 py-6">
             <dt className="text-xs tracking-wide text-foreground-muted">{card.label}</dt>
-            <dd className="mt-2 font-display text-4xl text-foreground">{card.value}</dd>
+            <dd className="mt-2 font-display text-4xl text-foreground">
+              {loading ? <Skeleton className="h-10 w-16" /> : card.value}
+            </dd>
           </div>
         ))}
       </dl>
 
-      <ActivityTrend events={events} />
+      {loading ? (
+        <Skeleton className="h-96 w-full" />
+      ) : (
+        <>
+          <ActivityTrend events={events} />
 
-      <AnalyticsPanels events={events} />
+          <AnalyticsPanels events={events} />
 
-      <section className="rounded-card border border-surface-border bg-surface/60 p-5">
-        <h2 className="font-mono text-[11px] tracking-[0.18em] text-foreground-muted uppercase">
-          Recent activity
-        </h2>
-        {lastEvent ? (
-          <p className="mt-4 text-sm text-foreground-muted">
-            Last activity {formatRelativeTime(lastEvent.occurred_at)}. See{" "}
-            <Link href={`/${link.slug}/logs`} className="text-signal-400 hover:underline">
-              the full log
-            </Link>{" "}
-            for every event.
-          </p>
-        ) : (
-          <EmptyState
-            title="No activity"
-            description="Share this link and opens or downloads will land here as they happen."
-            className="mt-4 border-0 bg-transparent px-0 py-8"
-          />
-        )}
-      </section>
+          <section className="rounded-card border border-surface-border bg-surface/60 p-5">
+            <h2 className="font-mono text-[11px] tracking-[0.18em] text-foreground-muted uppercase">
+              Recent activity
+            </h2>
+            {lastEvent ? (
+              <p className="mt-4 text-sm text-foreground-muted">
+                Last activity {formatRelativeTime(lastEvent.occurred_at)}. See{" "}
+                <Link href={`/${link.slug}/logs`} className="text-signal-400 hover:underline">
+                  the full log
+                </Link>{" "}
+                for every event.
+              </p>
+            ) : (
+              <EmptyState
+                title="No activity"
+                description="Share this link and opens or downloads will land here as they happen."
+                className="mt-4 border-0 bg-transparent px-0 py-8"
+              />
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }

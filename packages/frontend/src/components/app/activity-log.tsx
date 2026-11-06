@@ -4,6 +4,7 @@ import { Download, Eye } from "lucide-react";
 
 import { EmptyState } from "@/components/app/empty-state";
 import { Pagination } from "@/components/app/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
 import { usePagination } from "@/hooks/use-pagination";
 import {
   capitalize,
@@ -23,13 +24,40 @@ type Props = {
    * and "Page 1 viewed" alone doesn't say which one; the per-link page is
    * already scoped to a single resume, so it's redundant there. */
   linkTitleFor?: (linkId: string) => string;
+  /** True until the first fetch settles, so "no events" is never shown for data that has
+   * simply not arrived yet. */
+  loading?: boolean;
 };
 
-export function ActivityLog({ events, linkTitleFor }: Props) {
+export function ActivityLog({ events, linkTitleFor, loading = false }: Props) {
   const sorted = [...events].sort(
     (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime(),
   );
   const { page, pageCount, pageItems: pageEvents, setPage } = usePagination(sorted, PAGE_SIZE);
+
+  if (loading) {
+    return (
+      <div
+        aria-busy="true"
+        aria-label="Loading events"
+        className="mt-10 overflow-hidden rounded-card border border-surface-border"
+      >
+        {Array.from({ length: 5 }, (_, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-4 border-b border-surface-border bg-surface/40 px-5 py-4 last:border-0"
+          >
+            <Skeleton className="size-9 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3.5 w-40" />
+              <Skeleton className="h-3 w-64 max-w-full" />
+            </div>
+            <Skeleton className="h-3 w-12" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (sorted.length === 0) {
     return (

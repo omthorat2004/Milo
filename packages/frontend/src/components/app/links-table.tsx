@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { LinkStatusBadge } from "@/components/app/link-status-badge";
 import { Pagination } from "@/components/app/pagination";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { usePagination } from "@/hooks/use-pagination";
 import { useRevokeLinkMutation } from "@/hooks/use-link-mutations";
 import { useMyEventsQuery, useMyLinksQuery } from "@/hooks/use-link-queries";
@@ -24,6 +25,7 @@ export function LinksTable() {
   const revokeLink = useRevokeLinkMutation();
   const [pendingRevokeId, setPendingRevokeId] = useState<string | null>(null);
 
+  const eventsPending = eventsQuery.isPending;
   const links = linksQuery.data ?? [];
   const events = eventsQuery.data ?? [];
   const pendingRevokeLink = links.find((link) => link.id === pendingRevokeId) ?? null;
@@ -54,7 +56,7 @@ export function LinksTable() {
           return (
             <li
               key={link.id}
-              className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-4 border-b border-surface-border px-5 py-4 last:border-0"
+              className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_5.5rem] items-center gap-4 border-b border-surface-border px-5 py-4 last:border-0"
             >
               <div className="col-span-5 min-w-0 sm:col-span-1">
                 <Link
@@ -84,8 +86,12 @@ export function LinksTable() {
                 </div>
               </div>
 
-              <span className="hidden text-sm text-foreground sm:block">{summary.views}</span>
-              <span className="hidden text-sm text-foreground sm:block">{summary.downloads}</span>
+              <span className="hidden text-sm text-foreground sm:block">
+                {eventsPending ? <Skeleton className="h-4 w-6" /> : summary.views}
+              </span>
+              <span className="hidden text-sm text-foreground sm:block">
+                {eventsPending ? <Skeleton className="h-4 w-6" /> : summary.downloads}
+              </span>
               <span className="hidden text-sm text-foreground-muted sm:block">
                 {new Date(link.created_at).toLocaleDateString(undefined, {
                   month: "short",
