@@ -9,23 +9,39 @@ import { sendDwellBeacon } from "@/lib/links.api";
 import { cn } from "@/lib/utils";
 
 const SESSION_STORAGE_KEY = "milo_viewer_session_id";
+/** How long one anonymous id is reused before a fresh one is minted. */
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 2.5;
 const SCALE_STEP = 0.2;
 
 /**
- * Anonymous, scoped to this browser tab's lifetime only (sessionStorage, not
- * localStorage), matches the "anonymous session id" allowed signal, never a
- * durable cross-visit identifier. Wrapped in try/catch: private browsing or a
- * blocked storage API should degrade to "no session id," not break the page.
+ * Anonymous random id, shared by every tab in this browser (localStorage, so
+ * opening the link in a second tab no longer counts as a new unique viewer)
+ * and replaced after 24 hours, so it never becomes a long-lived cross-visit
+ * identifier. It is a random UUID, not derived from anything about the
+ * viewer. Wrapped in try/catch: private browsing or a blocked storage API
+ * should degrade to "no session id," not break the page.
  */
 function getOrCreateSessionId(): string | null {
   try {
-    const existing = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (existing) return existing;
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw) {
+      const stored = JSON.parse(raw) as { id?: unknown; createdAt?: unknown };
+      if (
+        typeof stored.id === "string" &&
+        typeof stored.createdAt === "number" &&
+        Date.now() - stored.createdAt < SESSION_TTL_MS
+      ) {
+        return stored.id;
+      }
+    }
 
     const created = crypto.randomUUID();
-    sessionStorage.setItem(SESSION_STORAGE_KEY, created);
+    localStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({ id: created, createdAt: Date.now() }),
+    );
     return created;
   } catch {
     return null;
@@ -93,7 +109,8 @@ export function ResumeViewer({ slug }: { slug: string }) {
     renderTaskRef.current?.cancel();
 
     const page = await pdfDoc.getPage(currentPage);
-    const containerWidth = containerRef.current?.clientWidth ?? page.getViewport({ scale: 1 }).width;
+    const containerWidth =
+      containerRef.current?.clientWidth ?? page.getViewport({ scale: 1 }).width;
     const fitScale = (containerWidth - 32) / page.getViewport({ scale: 1 }).width;
     const viewport = page.getViewport({ scale: fitScale * scale });
 
