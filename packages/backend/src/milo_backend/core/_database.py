@@ -24,7 +24,7 @@ async def connect(settings: Settings) -> None:
         retryWrites=True,
         # Read stored times back as UTC-aware, so the API sends them with a "Z".
         tz_aware=True,
-        tz_info=UTC,
+        tzinfo=UTC,
     )
 
     await _client.admin.command("ping")
