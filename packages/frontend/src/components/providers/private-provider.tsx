@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { loginUrlFor, safeRedirectTarget } from "@/lib/safe-redirect";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -21,7 +22,7 @@ function AuthGate({ fullScreen = false }: { fullScreen?: boolean }) {
 }
 
 /**
- * Wraps the (app) route group. Redirects to /login once AuthProvider's
+ * Wraps the (app) route group. Redirects to /login?from=<path> once AuthProvider's
  * initial check resolves and there's no session. Never renders the
  * protected children for a signed-out visitor, not even for a frame.
  */
@@ -31,7 +32,9 @@ export function PrivateProvider({ children }: { children: React.ReactNode }) {
   const isLoading = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) router.replace("/login");
+    if (isLoading || isAuthenticated) return;
+    // Remember where they were going so login can send them back (see lib/safe-redirect.ts).
+    router.replace(loginUrlFor(`${window.location.pathname}${window.location.search}`));
   }, [isLoading, isAuthenticated, router]);
 
   if (isLoading || !isAuthenticated) return <AuthGate fullScreen />;
@@ -41,7 +44,7 @@ export function PrivateProvider({ children }: { children: React.ReactNode }) {
 
 /**
  * Wraps the (auth) route group's form slot. Redirects an already-signed-in
- * visitor to /dashboard instead of letting them see login/register again.
+ * visitor to the `from` target (or /dashboard) instead of letting them see login/register again.
  */
 export function GuestOnlyProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -49,7 +52,8 @@ export function GuestOnlyProvider({ children }: { children: React.ReactNode }) {
   const isLoading = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) router.replace("/dashboard");
+    if (isLoading || !isAuthenticated) return;
+    router.replace(safeRedirectTarget(new URLSearchParams(window.location.search).get("from")));
   }, [isLoading, isAuthenticated, router]);
 
   if (isLoading || isAuthenticated) return <AuthGate />;
