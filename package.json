@@ -4,7 +4,8 @@
   "private": true,
   "description": "Milo, privacy-conscious resume analytics. Monorepo root.",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "!packages/admin"
   ],
   "engines": {
     "node": ">=20.9.0"

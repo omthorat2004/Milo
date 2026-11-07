@@ -63,3 +63,6 @@ Thumbs.db
 # claude code local overrides
 .claude/settings.local.json
 .env*
+
+# local-only admin dashboard (reads production data), never committed
+packages/admin/
