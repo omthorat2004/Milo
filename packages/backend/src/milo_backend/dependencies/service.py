@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Cookie, Depends
+from fastapi import Cookie, Depends, Header
 
 from milo_backend.core import ACCESS_TOKEN_COOKIE, Settings, get_database, get_settings
 from milo_backend.dao.analytics_event import AnalyticsEventDAO
@@ -56,7 +56,15 @@ LinkServiceDep = Annotated[LinkService, Depends(get_link_service)]
 async def get_current_user(
     service: AuthServiceDep,
     access_token: Annotated[str | None, Cookie(alias=ACCESS_TOKEN_COOKIE)] = None,
+    authorization: Annotated[str | None, Header()] = None,
 ) -> User:
+    # Browser extension: `Authorization: Bearer <access token>`. The cookie wins when both are
+    # present so the web app's behaviour is unchanged.
+    if not access_token and authorization:
+        scheme, _, bearer = authorization.partition(" ")
+        if scheme.lower() == "bearer":
+            access_token = bearer.strip() or None
+
     if not access_token:
         raise InvalidToken()
 

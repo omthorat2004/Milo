@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Request, Response, status
+from fastapi import APIRouter, Cookie, Header, Request, Response, status
 
 from milo_backend.core import (
     REFRESH_TOKEN_COOKIE,
@@ -18,9 +18,11 @@ from milo_backend.model.user import User
 from milo_backend.schemas.auth import (
     AuthResponse,
     AuthUser,
+    ExtensionAuthResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     LoginRequest,
+    RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
     StartVerificationRequest,
@@ -33,6 +35,9 @@ from milo_backend.schemas.auth import (
 from milo_backend.service.auth import TokenPair, VerificationChallenge
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+CLIENT_HEADER = "X-Milo-Client"
+EXTENSION_CLIENT = "extension"
 
 
 @router.post(
@@ -103,7 +108,7 @@ async def verify_otp(
     return AuthResponse(user=_public(user))
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login", response_model=AuthResponse | ExtensionAuthResponse)
 @limiter.limit(lambda: get_settings().rate_limit_login)
 async def login(
     request: Request,
@@ -111,8 +116,11 @@ async def login(
     payload: LoginRequest,
     service: AuthServiceDep,
     settings: SettingsDep,
-) -> AuthResponse:
+    client: Annotated[str | None, Header(alias=CLIENT_HEADER)] = None,
+) -> AuthResponse | ExtensionAuthResponse:
     user, tokens = await service.login(email=payload.email, password=payload.password)
+    if _is_extension(client):
+        return _extension_body(user, tokens)
     _authenticate(response, tokens=tokens, settings=settings)
     return AuthResponse(user=_public(user))
 
@@ -148,15 +156,24 @@ async def reset_password(
     return AuthResponse(user=_public(user))
 
 
-@router.post("/refresh", response_model=AuthResponse)
+@router.post("/refresh", response_model=AuthResponse | ExtensionAuthResponse)
 @limiter.limit(lambda: get_settings().rate_limit_refresh)
 async def refresh(
     request: Request,
     response: Response,
     service: AuthServiceDep,
     settings: SettingsDep,
+    payload: RefreshRequest | None = None,
     refresh_token: Annotated[str | None, Cookie(alias=REFRESH_TOKEN_COOKIE)] = None,
-) -> AuthResponse:
+    client: Annotated[str | None, Header(alias=CLIENT_HEADER)] = None,
+) -> AuthResponse | ExtensionAuthResponse:
+    if _is_extension(client):
+        # The extension sends its stored refresh token in the body, never via cookie.
+        if payload is None:
+            raise InvalidToken()
+        user, tokens = await service.refresh(refresh_token=payload.refresh_token)
+        return _extension_body(user, tokens)
+
     if not refresh_token:
         raise InvalidToken()
 
@@ -184,6 +201,18 @@ def _authenticate(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
         settings=settings,
+    )
+
+
+def _is_extension(client: str | None) -> bool:
+    return client == EXTENSION_CLIENT
+
+
+def _extension_body(user: User, tokens: TokenPair) -> ExtensionAuthResponse:
+    return ExtensionAuthResponse(
+        user=_public(user),
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token,
     )
 
 

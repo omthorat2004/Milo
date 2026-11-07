@@ -102,6 +102,22 @@ class AuthResponse(BaseModel):
     user: AuthUser
 
 
+class ExtensionAuthResponse(AuthResponse):
+    """Login/refresh body for the browser extension only (X-Milo-Client: extension).
+
+    The web app never sees these: its tokens stay in HttpOnly cookies. The extension has no
+    cookie jar tied to the API origin, so it keeps the pair in chrome.storage.local instead
+    and sends the access token as a Bearer header.
+    """
+
+    access_token: str
+    refresh_token: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(min_length=1, max_length=4_096)
+
+
 class VerificationStatusResponse(BaseModel):
     email: EmailStr
     status: VerificationState

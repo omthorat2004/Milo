@@ -61,6 +61,22 @@ All request/response fields are defined in `schemas/auth.py`; this table is the 
 `AuthResponse` is always `{"user": {id, name, email, email_verified}}`, the password hash and any
 internal fields never leave `model.User`.
 
+### Browser extension clients
+
+`packages/extension` cannot use the web app's cookies, so `/auth/login` and `/auth/refresh` have an
+opt-in variant, selected by the request header `X-Milo-Client: extension`:
+
+- `POST /auth/login` returns `{user, access_token, refresh_token}` in the body and sets **no**
+  cookies.
+- `POST /auth/refresh` reads `{"refresh_token": "..."}` from the body (not the cookie), rotates the
+  pair, and returns the same shape. A missing body is `invalid_token`.
+- Every authenticated route also accepts `Authorization: Bearer <access token>`. The cookie wins
+  when both are sent, so web behaviour is unchanged.
+
+Without the header, responses are exactly as in the table above: the web app's tokens stay in
+HttpOnly cookies and never appear in a response body. The extension keeps its pair in
+`chrome.storage.local` (never `storage.sync`, which would copy tokens to other devices).
+
 `POST /auth/forgot-password` is deliberately the one auth endpoint with a response that never
 varies: no email echo, no expiry/resend timers, 200 whether or not the address has an account,
 whether the account is verified, and whether a reset email was actually sent. `GET

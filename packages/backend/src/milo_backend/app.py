@@ -48,7 +48,7 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origins,
         allow_credentials=settings.cors_allow_credentials,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "Authorization"],
+        allow_headers=["Content-Type", "Authorization", "X-Milo-Client"],
         expose_headers=[
             "Retry-After",
             "X-RateLimit-Limit",
