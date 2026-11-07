@@ -62,6 +62,21 @@ def ensure_is_pdf_document(content_type: str, content: bytes) -> None:
         )
 
 
+def _declared_size(header: str | None) -> int | None:
+    """The Content-Length as an int, or None when absent or not a plain number."""
+    if header is None or not header.strip().isdigit():
+        return None
+    return int(header.strip())
+
+
+def _too_large_message(max_bytes: int) -> str:
+    megabytes = max_bytes // 1_000_000
+    return (
+        f"That PDF is larger than {megabytes} MB. "
+        "A resume is normally well under that, so check the link points at the right file."
+    )
+
+
 async def fetch_document(
     url: str, *, timeout_seconds: float, max_bytes: int
 ) -> FetchedDocument:
@@ -96,12 +111,20 @@ async def fetch_document(
 
                 response.raise_for_status()
 
+                # Most hosts declare the size up front. Refuse on the header alone, before
+                # reading a single byte of the body, so an oversized file costs nothing.
+                declared = _declared_size(response.headers.get("content-length"))
+                if declared is not None and declared > max_bytes:
+                    raise ValueError(_too_large_message(max_bytes))
+
+                # The header can be missing (chunked) or wrong, so the cap is also enforced
+                # while streaming: the download stops the moment it passes max_bytes.
                 chunks: list[bytes] = []
                 size = 0
                 async for chunk in response.aiter_bytes():
                     size += len(chunk)
                     if size > max_bytes:
-                        raise ValueError("Document exceeds the maximum allowed size.")
+                        raise ValueError(_too_large_message(max_bytes))
                     chunks.append(chunk)
 
                 return FetchedDocument(
