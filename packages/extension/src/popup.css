@@ -63,6 +63,8 @@ body {
 main {
   padding: 20px;
   display: grid;
+  /* minmax(0, ...) lets children shrink instead of pushing buttons past the popup's edge. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 :focus-visible {
@@ -180,29 +182,86 @@ button.ghost:hover {
   color: var(--foreground);
 }
 
+/* Scrolls inside the popup so a long list never grows it past the screen. */
 ul {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 2px 0 0;
   display: grid;
   gap: 8px;
-  max-height: 180px;
+  max-height: 260px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-border) transparent;
 }
 li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 8px 8px 14px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 10px 10px 14px;
   border: 1px solid var(--surface-border);
   border-radius: 8px;
   background: var(--surface);
 }
 li span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.resume-head,
+.link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.link-row {
+  padding-top: 8px;
+  border-top: 1px solid var(--surface-border);
+  color: var(--foreground-muted);
+  font-size: 12px;
+}
+button.small {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pager[hidden] {
+  display: none;
+}
+.field {
+  position: relative;
+}
+.field input {
+  padding-right: 44px;
+}
+button.reveal {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0 8px 8px 0;
+  background: transparent;
+  color: var(--foreground-muted);
+}
+button.reveal:hover {
+  background: transparent;
+  color: var(--foreground);
+}
+button.reveal svg {
+  width: 16px;
+  height: 16px;
 }
 .row {
   display: flex;
@@ -210,6 +269,7 @@ li span {
 }
 .row > * {
   flex: 1;
+  min-width: 0;
 }
 .error {
   padding: 12px 16px;

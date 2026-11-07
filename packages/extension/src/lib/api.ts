@@ -127,6 +127,9 @@ export function createApi({ baseUrl, store, fetchImpl = fetch }: Options) {
     createResume: (input: { title: string; source_url: string }): Promise<Resume> =>
       authed("/resumes", resumeSchema, { method: "POST", body: JSON.stringify(input) }),
 
+    /** Every link the signed-in user owns, across all resumes. */
+    listLinks: () => authed("/links", z.array(linkSchema)),
+
     createLink: (resumeId: string): Promise<TrackingLink> =>
       authed(`/resumes/${encodeURIComponent(resumeId)}/links`, linkSchema, {
         method: "POST",

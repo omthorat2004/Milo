@@ -1,5 +1,6 @@
 import { createApi, SessionExpiredError } from "@/lib/api";
 import { API_URL, APP_URL } from "@/lib/config";
+import { byNewest, groupActiveLinks, paginate } from "@/lib/resume-list";
 import type { Resume, Session, TrackingLink } from "@/lib/schemas";
 import { chromeSessionStore } from "@/lib/storage";
 
@@ -66,6 +67,45 @@ function brand(): HTMLElement {
   return el("div", { className: "brand" }, mark, el("span", { className: "wordmark" }, "Milo"));
 }
 
+// Eye / eye-off from Lucide (ISC), the same icons the web app's password field uses.
+function icon(...children: SVGElement[]): SVGSVGElement {
+  return svg(
+    "svg",
+    {
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round",
+      "aria-hidden": "true",
+    },
+    ...children,
+  );
+}
+
+function eyeIcon(): SVGSVGElement {
+  return icon(
+    svg("path", {
+      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+    }),
+    svg("circle", { cx: "12", cy: "12", r: "3" }),
+  );
+}
+
+function eyeOffIcon(): SVGSVGElement {
+  return icon(
+    svg("path", {
+      d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
+    }),
+    svg("path", { d: "M14.084 14.158a3 3 0 0 1-4.242-4.242" }),
+    svg("path", {
+      d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
+    }),
+    svg("path", { d: "m2 2 20 20" }),
+  );
+}
+
 function render(...nodes: Node[]): void {
   root.replaceChildren(...nodes);
 }
@@ -99,11 +139,21 @@ function showLogin(message?: string): void {
   const error = el("p", { className: "error", role: "alert", hidden: !message }, message ?? "");
   const submit = el("button", { type: "submit", className: "primary" }, "Log in");
 
+  const toggle = el("button", { type: "button", className: "reveal" });
+  function setRevealed(revealed: boolean): void {
+    password.type = revealed ? "text" : "password";
+    toggle.setAttribute("aria-label", revealed ? "Hide password" : "Show password");
+    toggle.setAttribute("aria-pressed", String(revealed));
+    toggle.replaceChildren(revealed ? eyeOffIcon() : eyeIcon());
+  }
+  toggle.addEventListener("click", () => setRevealed(password.type === "password"));
+  setRevealed(false);
+
   const form = el(
     "form",
     {},
     el("label", {}, "Email", email),
-    el("label", {}, "Password", password),
+    el("label", {}, "Password", el("div", { className: "field" }, password, toggle)),
     submit,
     error,
   );
@@ -138,6 +188,7 @@ function showHome(session: Session): void {
   const status = el("p", { className: "error", role: "alert", hidden: true });
   const resultSlot = el("div");
   const list = el("ul");
+  const pager = el("div", { className: "pager", hidden: true });
   const addSlot = el("div");
 
   function fail(error: unknown): void {
@@ -161,33 +212,97 @@ function showHome(session: Session): void {
     );
   }
 
-  function renderResumes(resumes: Resume[]): void {
-    if (resumes.length === 0) {
-      list.replaceChildren(el("li", {}, el("span", {}, "No resumes yet.")));
-      return;
-    }
-    list.replaceChildren(
-      ...resumes.map((resume) => {
-        const create = el("button", { type: "button" }, "Create link");
-        create.addEventListener("click", async () => {
-          create.disabled = true;
-          status.hidden = true;
-          try {
-            showLink(await api.createLink(resume.id));
-          } catch (error) {
-            fail(error);
-          } finally {
-            create.disabled = false;
-          }
-        });
-        return el("li", {}, el("span", { title: resume.source_url }, resume.title), create);
-      }),
+  let resumes: Resume[] = [];
+  let linksByResume = new Map<string, TrackingLink[]>();
+  let page = 0;
+
+  function copyButton(url: string): HTMLButtonElement {
+    const copy = el("button", { type: "button", className: "small" }, "Copy");
+    copy.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(url);
+      copy.textContent = "Copied";
+      setTimeout(() => (copy.textContent = "Copy"), 1500);
+    });
+    return copy;
+  }
+
+  function resumeItem(resume: Resume): HTMLLIElement {
+    const create = el("button", { type: "button", className: "small" }, "Create link");
+    create.addEventListener("click", async () => {
+      create.disabled = true;
+      status.hidden = true;
+      try {
+        showLink(await api.createLink(resume.id));
+        await loadLinks();
+      } catch (error) {
+        fail(error);
+      } finally {
+        create.disabled = false;
+      }
+    });
+
+    const links = (linksByResume.get(resume.id) ?? []).map((link) =>
+      el(
+        "div",
+        { className: "link-row" },
+        el("span", { title: link.share_url }, link.share_url.replace(/^https?:\/\//, "")),
+        copyButton(link.share_url),
+      ),
     );
+
+    return el(
+      "li",
+      {},
+      el(
+        "div",
+        { className: "resume-head" },
+        el("span", { title: resume.source_url }, resume.title),
+        create,
+      ),
+      ...links,
+    );
+  }
+
+  function renderResumes(): void {
+    const view = paginate(byNewest(resumes), page);
+    page = view.page;
+
+    list.replaceChildren(
+      ...(view.items.length === 0
+        ? [el("li", {}, el("span", {}, "No resumes yet."))]
+        : view.items.map(resumeItem)),
+    );
+
+    const prev = el("button", { type: "button", className: "small" }, "Previous");
+    prev.disabled = view.page === 0;
+    prev.addEventListener("click", () => {
+      page -= 1;
+      renderResumes();
+    });
+    const next = el("button", { type: "button", className: "small" }, "Next");
+    next.disabled = view.page >= view.pageCount - 1;
+    next.addEventListener("click", () => {
+      page += 1;
+      renderResumes();
+    });
+    pager.hidden = view.pageCount <= 1;
+    pager.replaceChildren(
+      prev,
+      el("small", {}, `Page ${view.page + 1} of ${view.pageCount}`),
+      next,
+    );
+  }
+
+  async function loadLinks(): Promise<void> {
+    linksByResume = groupActiveLinks(await api.listLinks());
+    renderResumes();
   }
 
   async function loadResumes(): Promise<void> {
     try {
-      renderResumes(await api.listResumes());
+      resumes = await api.listResumes();
+      renderResumes();
+      await loadLinks();
     } catch (error) {
       fail(error);
     }
@@ -243,6 +358,7 @@ function showHome(session: Session): void {
     resultSlot,
     el("h2", {}, "Your resumes"),
     list,
+    pager,
     status,
     el("div", { className: "row" }, dashboard, logout),
   );
