@@ -39,14 +39,14 @@ export function MarketingFooter() {
             Source
           </a>
           <a
-            href="https://startupbenchmarks.com/product/milo-nu-two-vercel"
+            href="https://startupbenchmarks.com/product/milo-frontend-lake-vercel"
             target="_blank"
             rel="noopener noreferrer"
           >
             {/* Third-party badge served as-is, so a plain img rather than next/image. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://startupbenchmarks.com/assets/images/badge.png"
+              src="https://startupbenchmarks.com/assets/images/badge-dark.png"
               alt="Startup Benchmarks"
               height={54}
               className="h-[54px] w-auto"
