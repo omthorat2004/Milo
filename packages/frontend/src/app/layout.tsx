@@ -5,6 +5,8 @@ import { themeInitScript } from "@milo/ui/theme";
 
 import "./globals.css";
 
+import { siteUrl } from "@/lib/site";
+
 import { Provider } from "./provider";
 
 const bodyFont = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -17,9 +19,13 @@ const display = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  alternates: { canonical: "/" },
   title: { default: "Milo", template: "%s, Milo" },
   description:
     "Know when your resume gets seen. Anonymous analytics for the resume you already host.",
+  robots: { index: true, follow: true },
+  openGraph: { type: "website", siteName: "Milo", title: "Milo", url: "/" },
 };
 
 export const viewport: Viewport = {
