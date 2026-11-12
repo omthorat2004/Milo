@@ -21,7 +21,7 @@ export function LinkOnly() {
 
         <div className="mt-6 space-y-4 text-lg leading-relaxed text-foreground-muted">
           <p>
-            You share <span className="text-foreground">milo.app/r/abc123</span> instead of
+            You share <span className="text-foreground">milo.app/l/abc123</span> instead of
             attaching the PDF. That link is a page Milo serves, so opening it, turning a page and
             downloading are all things Milo can actually see.
           </p>

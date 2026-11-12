@@ -13,7 +13,7 @@ const steps = [
     icon: Send,
     title: "Share the Milo link instead",
     body: "One short link per resume. Put a different one in each application, or add UTM tags to tell LinkedIn from a referral.",
-    code: "milo.app/r/abc123",
+    code: "milo.app/l/abc123",
   },
   {
     icon: BarChart3,

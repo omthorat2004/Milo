@@ -34,7 +34,7 @@ export const storyActs: readonly StoryAct[] = [
     id: "link",
     eyebrow: "03 · The change",
     headline: "Share one Milo link instead.",
-    body: "milo.app/r/abc123 opens your real PDF in a clean viewer. Same document, same host. Now with a signal attached.",
+    body: "milo.app/l/abc123 opens your real PDF in a clean viewer. Same document, same host. Now with a signal attached.",
   },
   {
     id: "signal",

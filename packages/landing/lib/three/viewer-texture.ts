@@ -60,8 +60,8 @@ export function createViewerBarTexture(): THREE.CanvasTexture {
 
   ctx.fillStyle = LABEL;
   ctx.font = `400 24px ${MONO}`;
-  ctx.fillText("milo.app/r/", pillX + 26, midline);
-  const prefixWidth = ctx.measureText("milo.app/r/").width;
+  ctx.fillText("milo.app/l/", pillX + 26, midline);
+  const prefixWidth = ctx.measureText("milo.app/l/").width;
   ctx.fillStyle = URL_TEXT;
   ctx.fillText("abc123", pillX + 26 + prefixWidth, midline);
 
