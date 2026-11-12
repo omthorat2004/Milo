@@ -14,6 +14,7 @@ import {
   verifyOtp,
   type AuthUser,
   type EmailInput,
+  type ForgotPasswordResult,
   type LoginInput,
   type RegisterInput,
   type ResetPasswordInput,
@@ -88,7 +89,7 @@ export function useResendOtpMutation(): UseMutationResult<
 /** No session change, the backend's response never reveals whether the
  * email has an account (see forgotPassword's own comment). */
 export function useForgotPasswordMutation(): UseMutationResult<
-  { msg: string },
+  ForgotPasswordResult,
   unknown,
   EmailInput
 > {

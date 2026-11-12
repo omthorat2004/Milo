@@ -1,15 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 
 import { PasswordField } from "@/components/app/auth-form";
 import { Button } from "@/components/ui/button";
 import { useForgotPasswordMutation, useResetPasswordMutation } from "@/hooks/use-auth-mutations";
 import { getAuthErrorMessage } from "@/lib/auth.api";
+import {
+  clearResetCooldown,
+  loadResetCooldown,
+  saveResetCooldown,
+  secondsLeft,
+} from "@/lib/reset-cooldown";
 import { cn } from "@/lib/utils";
-
-const RESEND_COOLDOWN_SECONDS = 30;
 
 type Step = "email" | "reset";
 
@@ -18,19 +22,48 @@ type Step = "email" | "reset";
  * reset" state worth resolving on mount the way /verify's OTP step does
  * (useResolveVerificationMutation), since the backend's forgot-password
  * response is deliberately the same whether or not the email has an
- * account, there's nothing to recover across a refresh without leaking
- * that. A refresh just restarts at the email step.
+ * account, there's nothing to ask it after a refresh without leaking that.
+ *
+ * What survives a refresh lives in sessionStorage instead (see
+ * lib/reset-cooldown): the email and when the resend button unlocks. The
+ * timer length comes from the server's resend_after_seconds, so it always
+ * matches the server's real cooldown.
  */
 export function ForgotPasswordForm({ className }: { className?: string }) {
+  // False on the server and during hydration, true afterwards. sessionStorage
+  // only exists in the browser, so the saved reset is read once, by a form
+  // remounted after hydration, instead of in the useState initialisers of the
+  // first render (which would make server and client markup disagree).
+  const hydrated = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
+
+  return (
+    <ForgotPasswordSteps
+      key={hydrated ? "client" : "server"}
+      restore={hydrated}
+      className={className}
+    />
+  );
+}
+
+function subscribeNever(): () => void {
+  return () => {};
+}
+
+function ForgotPasswordSteps({ className, restore }: { className?: string; restore: boolean }) {
   const router = useRouter();
   const emailId = useId();
   const codeId = useId();
   const passwordId = useId();
   const noticeId = useId();
 
-  const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [cooldown, setCooldown] = useState(0);
+  const [saved] = useState(() => (restore ? loadResetCooldown() : null));
+  const [step, setStep] = useState<Step>(saved ? "reset" : "email");
+  const [email, setEmail] = useState(saved?.email ?? "");
+  const [cooldown, setCooldown] = useState(saved ? secondsLeft(saved.until) : 0);
 
   const forgotPassword = useForgotPasswordMutation();
   const resetPassword = useResetPasswordMutation();
@@ -42,8 +75,15 @@ export function ForgotPasswordForm({ className }: { className?: string }) {
   }, [cooldown]);
 
   useEffect(() => {
-    if (resetPassword.isSuccess) router.replace("/dashboard");
+    if (!resetPassword.isSuccess) return;
+    clearResetCooldown();
+    router.replace("/dashboard");
   }, [resetPassword.isSuccess, router]);
+
+  function startCooldown(address: string, seconds: number) {
+    saveResetCooldown(address, seconds);
+    setCooldown(seconds);
+  }
 
   function handleEmailSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,8 +92,8 @@ export function ForgotPasswordForm({ className }: { className?: string }) {
     forgotPassword.mutate(
       { email: submittedEmail },
       {
-        onSuccess: () => {
-          setCooldown(RESEND_COOLDOWN_SECONDS);
+        onSuccess: (result) => {
+          startCooldown(submittedEmail, result.resend_after_seconds);
           setStep("reset");
         },
       },
@@ -61,7 +101,10 @@ export function ForgotPasswordForm({ className }: { className?: string }) {
   }
 
   function handleResend() {
-    forgotPassword.mutate({ email }, { onSuccess: () => setCooldown(RESEND_COOLDOWN_SECONDS) });
+    forgotPassword.mutate(
+      { email },
+      { onSuccess: (result) => startCooldown(email, result.resend_after_seconds) },
+    );
   }
 
   function handleResetSubmit(event: React.SubmitEvent<HTMLFormElement>) {

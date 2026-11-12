@@ -132,12 +132,15 @@ async def forgot_password(
     response: Response,
     payload: ForgotPasswordRequest,
     service: AuthServiceDep,
+    settings: SettingsDep,
 ) -> ForgotPasswordResponse:
     """Always 200 with the same body, whether or not that email has an
     account, see AuthService.request_password_reset and
     ForgotPasswordResponse for why."""
     await service.request_password_reset(email=payload.email)
-    return ForgotPasswordResponse()
+    return ForgotPasswordResponse(
+        resend_after_seconds=settings.otp_resend_cooldown_seconds
+    )
 
 
 @router.post("/reset-password", response_model=AuthResponse)

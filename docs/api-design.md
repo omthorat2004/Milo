@@ -52,7 +52,7 @@ All request/response fields are defined in `schemas/auth.py`; this table is the 
 | `POST /auth/verify-email/status` | no | `{email}` | 200 `VerificationStatusResponse` (`status: none\|pending\|verified`) |, (always 200; "no pending verification" is a normal state, not an error) |
 | `POST /auth/verify-otp` | no | `{email, code}` | 200 `AuthResponse`, sets auth cookies | `verification_not_found`, `email_already_verified`, `verification_code_expired`, `verification_code_invalid` (`details.attempts_remaining`), `too_many_verification_attempts` |
 | `POST /auth/login` | no | `{email, password}` | 200 `AuthResponse`, sets auth cookies | `invalid_credentials`, `email_not_verified` (`details.email`) |
-| `POST /auth/forgot-password` | no | `{email}` | 200 `ForgotPasswordResponse` (fixed `msg`, no email echo, no timers) |, (always 200 regardless of whether the email has an account, see below) |
+| `POST /auth/forgot-password` | no | `{email}` | 200 `ForgotPasswordResponse` (fixed `msg` and `resend_after_seconds`, no email echo) |, (always 200 regardless of whether the email has an account, see below) |
 | `POST /auth/reset-password` | no | `{email, code, new_password}` | 200 `AuthResponse`, sets auth cookies | `password_reset_invalid` (unknown email, no pending reset, expired, or wrong code, all collapsed into one response on purpose), `too_many_password_reset_attempts`, `weak_password` |
 | `POST /auth/refresh` | refresh cookie | N/A | 200 `AuthResponse`, rotates auth cookies | `invalid_token` (missing/expired/wrong-type cookie) |
 | `POST /auth/logout` | no | N/A | 204, clears auth cookies | N/A |
@@ -78,11 +78,16 @@ HttpOnly cookies and never appear in a response body. The extension keeps its pa
 `chrome.storage.local` (never `storage.sync`, which would copy tokens to other devices).
 
 `POST /auth/forgot-password` is deliberately the one auth endpoint with a response that never
-varies: no email echo, no expiry/resend timers, 200 whether or not the address has an account,
+varies: no email echo, no per-account timers, 200 whether or not the address has an account,
 whether the account is verified, and whether a reset email was actually sent. `GET
 /auth/verify-email/status` leaks exactly this (known vs. unknown address gets a different
 `status`), a known, accepted gap for a less sensitive flow; forgot-password is written to not
 repeat it, since this is specifically the endpoint most likely to be hit for account enumeration.
+The one number it carries, `resend_after_seconds`, is the configured `otp_resend_cooldown_seconds`
+for every address, never the time actually left on a pending reset (that would differ between a
+known and an unknown email on a repeat request). The client uses it for its resend timer and keeps
+the unlock time in `sessionStorage` (`lib/reset-cooldown.ts`) so a refresh does not hand out a fresh
+timer; a request inside the cooldown is still dropped silently server-side.
 `POST /auth/reset-password` follows the same principle: unknown email, no pending reset, an expired
 code, and a wrong code are all reported as the same `password_reset_invalid`, a distinct "no
 account" response would let this endpoint be used to test which emails have accounts instead.

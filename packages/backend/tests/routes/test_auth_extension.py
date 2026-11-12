@@ -102,3 +102,21 @@ async def test_garbage_bearer_token_is_rejected(client: TestClient) -> None:
     response = client.get("/auth/me", headers={"Authorization": "Bearer nope"})
 
     assert response.status_code == 401
+
+
+async def test_forgot_password_response_is_identical_for_known_and_unknown_emails(
+    client: TestClient,
+) -> None:
+    await _verified_user(client)
+
+    known = client.post("/auth/forgot-password", json={"email": CREDENTIALS["email"]})
+    # A second request inside the cooldown is silently dropped server-side,
+    # and must still look exactly like the first.
+    repeated = client.post(
+        "/auth/forgot-password", json={"email": CREDENTIALS["email"]}
+    )
+    unknown = client.post("/auth/forgot-password", json={"email": "nobody@example.com"})
+
+    assert known.status_code == repeated.status_code == unknown.status_code == 200
+    assert known.json() == repeated.json() == unknown.json()
+    assert known.json()["resend_after_seconds"] == 60

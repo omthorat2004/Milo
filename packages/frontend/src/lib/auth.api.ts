@@ -16,6 +16,11 @@ export type VerificationPending = {
   msg: string;
 };
 
+export type ForgotPasswordResult = {
+  msg: string;
+  resend_after_seconds: number;
+};
+
 export type VerificationStatus = {
   email: string;
   status: "none" | "pending" | "verified";
@@ -74,10 +79,12 @@ export async function login(input: LoginInput): Promise<AuthUser> {
 /**
  * Always resolves with the same message, whether or not that email has an
  * account, the backend's response is deliberately constant (see
- * ForgotPasswordResponse) so there's nothing here to branch on.
+ * ForgotPasswordResponse) so there's nothing here to branch on. The one number
+ * it carries, resend_after_seconds, is the server's fixed cooldown, identical
+ * for every address.
  */
-export async function forgotPassword(input: EmailInput): Promise<{ msg: string }> {
-  const { data } = await api.post<{ msg: string }>("/auth/forgot-password", input, {
+export async function forgotPassword(input: EmailInput): Promise<ForgotPasswordResult> {
+  const { data } = await api.post<ForgotPasswordResult>("/auth/forgot-password", input, {
     ignoreRefresh: true,
   });
   return data;

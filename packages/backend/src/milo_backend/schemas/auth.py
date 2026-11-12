@@ -134,7 +134,13 @@ class VerificationPendingResponse(BaseModel):
 
 
 class ForgotPasswordResponse(BaseModel):
-    """Deliberately constant, no email echo, no timers: anything that varied
-    by outcome would tell a caller whether that address has an account."""
+    """Deliberately constant, no email echo: anything that varied by outcome
+    would tell a caller whether that address has an account.
+
+    resend_after_seconds is the server's configured resend cooldown, the
+    same number for every address (never the time actually left on a
+    pending reset), so it tells the client how long to disable its resend
+    button without revealing whether a reset exists."""
 
     msg: str = "If an account exists for that email, we sent a password reset code."
+    resend_after_seconds: int
